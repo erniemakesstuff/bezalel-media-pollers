@@ -27,16 +27,17 @@ aws_profile = {
 targetCallback = "TODO"
 media_text_queue = "https://sqs.us-west-2.amazonaws.com/971422718801/media-text-queue"
 visibility_timeout_seconds = 20 # TODO: Update this longer!
-poll_delay_seconds = 1
+poll_delay_seconds = 1 # Polling interval
 max_workers = 1
-# TODO: Set warmup grace period to initialize local LLM or clients prior to polling-work
-
+# TODO: Ensure to call some standard "warm" or "init" function as a blocking call prior to polling.
+# LLMs take awhile to load.
 def my_callback(mediaEvent) -> bool:
-    print("BodyMessage: " + mediaEvent.MediaType)
+    logger.info("BodyMessage: " + mediaEvent.MediaType)
     return True
 
 
 # TODO, wrap this in a while-loop after grace period
+logger.info("Starting polling...")
 queue_wrapper.poll(media_text_queue, my_callback,
                    visibility_timeout_seconds,
                    poll_delay_seconds)
