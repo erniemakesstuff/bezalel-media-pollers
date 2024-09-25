@@ -10,6 +10,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 import queue_wrapper
+from callbacks import CallbackHandler
 import clients.gemini as gemini
 
 logger = logging.getLogger(__name__)
@@ -25,22 +26,19 @@ aws_profile = {
     "aws_secret_access_key": os.environ['AWS_SECRET_ACCESS_KEY'],
 }
 # TODO: Assign these variables as env args to startup script
-targetCallback = "TODO"
+targetGenerator = "TextMedia" #os.environ['TARGET_GENERATOR']
 media_text_queue = "https://sqs.us-west-2.amazonaws.com/971422718801/media-text-queue"
 visibility_timeout_seconds = 20 # TODO: Update this longer!
-poll_delay_seconds = 1 # Polling interval
+poll_delay_seconds = 5 # Polling interval
 max_workers = 1
-# TODO: Ensure to call some standard "warm" or "init" function as a blocking call prior to polling.
-# LLMs take awhile to load.
-geminiInst = gemini.GeminiClient()
-geminiInst.call_model("You are a bubbly fun loving woman.", "What is your favorite thing to do on sunny days?")
-def my_callback(mediaEvent) -> bool:
-    logger.info("BodyMessage: " + mediaEvent.MediaType)
-    return True
 
 
-# TODO, wrap this in a while-loop after grace period
+callback_handler = CallbackHandler(targetGenerator=targetGenerator)
 logger.info("Starting polling...")
-queue_wrapper.poll(media_text_queue, my_callback,
-                   visibility_timeout_seconds,
-                   poll_delay_seconds)
+while True:
+    queue_wrapper.poll(media_text_queue, callback_handler.handle_message,
+                    visibility_timeout_seconds,
+                    poll_delay_seconds)
+
+
+
