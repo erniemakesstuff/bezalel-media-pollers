@@ -10,6 +10,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 import queue_wrapper
+import clients.gemini as gemini
 
 logger = logging.getLogger(__name__)
 session = boto3.Session(
@@ -31,6 +32,8 @@ poll_delay_seconds = 1 # Polling interval
 max_workers = 1
 # TODO: Ensure to call some standard "warm" or "init" function as a blocking call prior to polling.
 # LLMs take awhile to load.
+geminiInst = gemini.GeminiClient()
+geminiInst.call_model()
 def my_callback(mediaEvent) -> bool:
     logger.info("BodyMessage: " + mediaEvent.MediaType)
     return True
