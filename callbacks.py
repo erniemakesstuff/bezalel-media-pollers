@@ -9,6 +9,7 @@ import boto3
 
 from botocore.exceptions import ClientError
 import clients.gemini as gemini
+import s3_wrapper
 logger = logging.getLogger(__name__)
 class CallbackHandler(object):
     geminiInst = None
@@ -34,4 +35,9 @@ class CallbackHandler(object):
         if not resultText:
             return False
         # TODO store s3 by callback id.
+        fileName = mediaEvent.ContentLookupKey + ".txt"
+        with open(fileName, "w") as text_file:
+            text_file.write(resultText)
+        s3_wrapper.upload_file(fileName, mediaEvent.ContentLookupKey)
+        os.remove(fileName)
         return True
