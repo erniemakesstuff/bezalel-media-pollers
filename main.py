@@ -6,6 +6,7 @@ import logging
 import sys
 
 import boto3
+
 from botocore.exceptions import ClientError
 
 import queue_wrapper
@@ -17,7 +18,6 @@ session = boto3.Session(
     aws_secret_access_key= os.environ['AWS_SECRET_ACCESS_KEY'],
 )
 sqs = session.client("sqs")
-
 aws_profile = {
     "region_name": os.environ['AWS_REGION'],
     "aws_access_key_id": os.environ['AWS_ACCESS_KEY_ID'],
