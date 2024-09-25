@@ -33,7 +33,7 @@ max_workers = 1
 # TODO: Ensure to call some standard "warm" or "init" function as a blocking call prior to polling.
 # LLMs take awhile to load.
 geminiInst = gemini.GeminiClient()
-geminiInst.call_model()
+geminiInst.call_model("You are a bubbly fun loving woman.", "What is your favorite thing to do on sunny days?")
 def my_callback(mediaEvent) -> bool:
     logger.info("BodyMessage: " + mediaEvent.MediaType)
     return True
