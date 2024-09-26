@@ -1,5 +1,4 @@
 from types import SimpleNamespace
-from sqs_polling import sqs_polling
 import os
 import json
 import logging

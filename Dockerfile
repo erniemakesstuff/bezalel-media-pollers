@@ -15,6 +15,9 @@ WORKDIR /app
  
 # Copies everything from your root directory into /app
 COPY . .
+
+# TODO Install dependencies
+RUN pip install
  
 # Specifies the executable command that runs when the container starts
 ENTRYPOINT ["sh", "./startup.sh"]
