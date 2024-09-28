@@ -1,5 +1,6 @@
-# Specifies a parent image
-FROM python:3.13.0rc2-bookworm
+# TODO: Replace this w/ GPU enabled container image.
+# Use CUDA image? ? --platform=linux/amd64 
+FROM python:3.9-slim-bullseye
 
 ARG AwsSecretKey
 ARG AwsSecretId
@@ -16,8 +17,10 @@ WORKDIR /app
 # Copies everything from your root directory into /app
 COPY . .
 
-# TODO Install dependencies
-RUN pip install
- 
-# Specifies the executable command that runs when the container starts
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir -r requirements.txt
+
 ENTRYPOINT ["sh", "./startup.sh"]

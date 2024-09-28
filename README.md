@@ -6,7 +6,15 @@ Start shell environment
 `pipenv shell`
 `python main.py`
 
+## venvs
+Creating virtual env if not present `python3 -m venv .venv`
+Activate venv shell `. ./.venv/bin/activate`
+Set VisualStudioCode interpreter to your .venv path.
+
 # Running Docker
+Write your current venv Pipfile to a requirements.txt for pip to use:
+`pipenv run pipenv_to_requirements -f`
+
 `docker build -t poller --build-arg AwsSecretId=$AWS_ACCESS_KEY_ID --build-arg AwsSecretKey=$AWS_SECRET_ACCESS_KEY --build-arg AwsRegion=$AWS_REGION --build-arg TargetGeneration=Text .`
 `docker run poller`
 
