@@ -30,6 +30,9 @@ class CallbackHandler(object):
     def handle_script_text(self, mediaEvent) -> bool:
         logger.info("SystemPromptInstruction: " + mediaEvent.SystemPromptInstruction)
         logger.info("PromptInstruction: " + mediaEvent.PromptInstruction)
+        # local console
+        print("SystemPromptInstruction: " + mediaEvent.SystemPromptInstruction)
+        print("PromptInstruction: " + mediaEvent.PromptInstruction)
         resultText = self.geminiInst.call_model(mediaEvent.SystemPromptInstruction, mediaEvent.PromptInstruction)
         if not resultText:
             return False
@@ -39,4 +42,5 @@ class CallbackHandler(object):
             text_file.write(resultText)
         s3_wrapper.upload_file(fileName, mediaEvent.ContentLookupKey)
         os.remove(fileName)
+        print("Generated conetent: " + resultText)
         return True

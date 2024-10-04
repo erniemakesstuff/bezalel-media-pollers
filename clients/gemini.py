@@ -16,5 +16,4 @@ class GeminiClient(object):
         response = self.model.generate_content(
             prompt_text
             )
-        print(response.text)
         return response.text

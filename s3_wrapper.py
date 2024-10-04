@@ -18,7 +18,7 @@ bucket = "truevine-media-storage"
 def upload_file(file_path_name, callbackId) -> bool:
     """Upload a file to an S3 bucket
 
-    :param file_path_name: File to upload
+    :param file_path_name: local path; file to upload
     :param callbackId: S3 object name. Should be MediaEvent callback ID.
     :return: True if file was uploaded, else False
     """
