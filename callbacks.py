@@ -25,6 +25,8 @@ class CallbackHandler(object):
         result = False
         if mediaEvent.MediaType.lower() == "text":
             result = self.handle_script_text(mediaEvent)
+        if mediaEvent.MediaType.lower() == "render":
+            result = self.handle_render(mediaEvent=mediaEvent)
         return result
 
     def handle_script_text(self, mediaEvent) -> bool:
@@ -43,4 +45,43 @@ class CallbackHandler(object):
         s3_wrapper.upload_file(fileName, mediaEvent.ContentLookupKey)
         os.remove(fileName)
         print("Generated conetent: " + resultText)
+        return True
+    
+    def handle_render(self, mediaEvent) -> bool:
+        if not mediaEvent.FinalRenderSequences or mediaEvent.FinalRenderSequences is None:
+            print("correlationID: {0} received empty render request".format(mediaEvent.LedgerID))
+            return False
+        # TODO store s3 by callback id.
+        # TODO will be final media aggregate in destination format by distributionFormat
+        
+        if mediaEvent.DistributionFormat.lower() == "blog" or mediaEvent.DistributionFormat.lower() == "integblog":
+            print("correlationID: {0} calling handle final render blog".format(mediaEvent.LedgerID))
+            return self.handle_final_render_blog(mediaEvent=mediaEvent)
+        
+        print("correlationID: {0} no matching distribution format to handle: {1}".format(mediaEvent.LedgerID,
+                                                                                         mediaEvent.DistributionFormat))
+        return False
+    
+    def handle_final_render_blog(self, mediaEvent) -> bool:
+        finalBlogPayload = ""
+        successfulDownload = False
+        print("correlationID: {0} received sequences: {1}".format(mediaEvent.LedgerID, mediaEvent.FinalRenderSequences))
+        for finalRender in mediaEvent.FinalRenderSequences:
+            print("correlationID: {0} processing final render: {1}".format(mediaEvent.LedgerID, finalRender))
+            if finalRender.MediaType.lower() == "text":
+                successfulDownload = s3_wrapper.download_file(remote_file_name=finalRender.ContentLookupKey,
+                                                              save_to_filename=mediaEvent.ContentLookupKey)
+                with open(mediaEvent.ContentLookupKey, 'r') as file:
+                    finalBlogPayload = file.read().replace('```json', '').replace('```', '')
+                break
+                
+        if not successfulDownload:
+            print("correlationID: {0} failed to download file: {1}".format(mediaEvent.LedgerID, finalRender.ContentLookupKey))
+            return successfulDownload
+        fileName = mediaEvent.ContentLookupKey + ".json"
+        with open(fileName, "w") as text_file:
+            text_file.write(finalBlogPayload)
+        s3_wrapper.upload_file(fileName, mediaEvent.ContentLookupKey)
+        os.remove(fileName)
+        os.remove(mediaEvent.ContentLookupKey)
         return True

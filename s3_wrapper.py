@@ -31,3 +31,18 @@ def upload_file(file_path_name, callbackId) -> bool:
         logging.error(e)
         return False
     return True
+
+def download_file(remote_file_name, save_to_filename) -> bool:
+    """Download s3 file
+    :param save_to_filename: local path; file to save the contants to
+    :param remote_file_name: S3 object name.
+    :return: True if file was uploaded, else False
+    """
+    # Download the remote file
+    s3_client = boto3.client('s3')
+    try:
+        response = s3_client.download_file(bucket, remote_file_name, save_to_filename)
+    except ClientError as e:
+        logging.error(e)
+        return False
+    return True
