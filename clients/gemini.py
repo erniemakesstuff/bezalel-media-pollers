@@ -16,4 +16,18 @@ class GeminiClient(object):
         response = self.model.generate_content(
             prompt_text
             )
+        return self.sanitize_json(response.text)
+    
+    def sanitize_json(self, respText) ->str:
+        jsonInstruction = """
+            You are given the following json-like object.
+            If the object is already valid json, return as is.
+            If the object is invalid json, modify the object so that it is valid json.
+            Your response should be valid json format.
+        """
+        self.model = GenerativeModel("gemini-1.5-flash-001",
+                                 system_instruction=jsonInstruction)
+        response = self.model.generate_content(
+            respText
+            )
         return response.text
