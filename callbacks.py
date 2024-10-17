@@ -67,12 +67,13 @@ class CallbackHandler(object):
     def handle_final_render_blog(self, mediaEvent) -> bool:
         finalBlogPayload = ""
         successfulDownload = False
-        print("correlationID: {0} received sequences: {1}".format(mediaEvent.LedgerID, mediaEvent.FinalRenderSequences))
         for finalRender in mediaEvent.FinalRenderSequences:
-            print("correlationID: {0} processing final render: {1}".format(mediaEvent.LedgerID, finalRender))
             if finalRender.MediaType.lower() == "text":
                 successfulDownload = s3_wrapper.download_file(remote_file_name=finalRender.ContentLookupKey,
                                                               save_to_filename=mediaEvent.ContentLookupKey)
+                if not successfulDownload:
+                    return successfulDownload
+                
                 with open(mediaEvent.ContentLookupKey, 'r') as file:
                     finalBlogPayload = file.read().replace('```json', '').replace('```', '')
                 break
