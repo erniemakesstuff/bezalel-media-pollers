@@ -11,6 +11,9 @@ import clients.gemini as gemini
 import s3_wrapper
 logger = logging.getLogger(__name__)
 class CallbackHandler(object):
+    blogDistributionFormats = [
+        "blog", "tinyblog", "integblog"
+    ]
     geminiInst = None
     targetGenerator = None
     def __new__(cls, targetGenerator):
@@ -42,10 +45,10 @@ class CallbackHandler(object):
         fileName = mediaEvent.ContentLookupKey + ".txt"
         with open(fileName, "w") as text_file:
             text_file.write(resultText)
-        s3_wrapper.upload_file(fileName, mediaEvent.ContentLookupKey)
+        success = s3_wrapper.upload_file(fileName, mediaEvent.ContentLookupKey)
         os.remove(fileName)
         print("Generated conetent: " + resultText)
-        return True
+        return success
     
     def handle_render(self, mediaEvent) -> bool:
         if not mediaEvent.FinalRenderSequences or mediaEvent.FinalRenderSequences is None:
@@ -53,8 +56,7 @@ class CallbackHandler(object):
             return False
         # TODO store s3 by callback id.
         # TODO will be final media aggregate in destination format by distributionFormat
-        
-        if mediaEvent.DistributionFormat.lower() == "blog" or mediaEvent.DistributionFormat.lower() == "integblog":
+        if mediaEvent.DistributionFormat.lower() in self.blogDistributionFormats:
             print("correlationID: {0} calling handle final render blog".format(mediaEvent.LedgerID))
             return self.handle_final_render_blog(mediaEvent=mediaEvent)
         
@@ -81,7 +83,7 @@ class CallbackHandler(object):
         fileName = mediaEvent.ContentLookupKey + ".json"
         with open(fileName, "w") as text_file:
             text_file.write(finalBlogPayload)
-        s3_wrapper.upload_file(fileName, mediaEvent.ContentLookupKey)
+        success = s3_wrapper.upload_file(fileName, mediaEvent.ContentLookupKey)
         os.remove(fileName)
         os.remove(mediaEvent.ContentLookupKey)
-        return True
+        return success
