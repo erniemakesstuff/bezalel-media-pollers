@@ -29,7 +29,7 @@ aws_profile = {
 targetGenerator = "TextMedia" #os.environ['TARGET_GENERATOR']
 media_text_queue = "https://sqs.us-west-2.amazonaws.com/971422718801/media-text-queue"
 media_render_queue = "https://sqs.us-west-2.amazonaws.com/971422718801/media-render-queue"
-visibility_timeout_seconds = 20 # TODO: Update this longer!
+visibility_timeout_seconds = 30 # TODO: Update this longer!
 poll_delay_seconds = 5 # Polling interval
 max_workers = 1
 
