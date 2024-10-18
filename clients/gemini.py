@@ -1,3 +1,4 @@
+import json
 import vertexai
 from vertexai.generative_models import GenerativeModel, SafetySetting
 
@@ -38,11 +39,14 @@ class GeminiClient(object):
         return self.sanitize_json(response.text)
     
     def sanitize_json(self, respText) ->str:
+        isValidJson = self.parse(respText)
+        if isValidJson:
+            return respText
+
         jsonInstruction = """
-            You are given the following json-like object.
-            If the object is already valid json, return as is.
-            If the object is invalid json, modify the object so that it is valid json.
-            Your response should be valid json format.
+            Transform the input text to be valid json.
+            Respond with the valid json output.
+            ###
         """
         self.model = GenerativeModel("gemini-1.5-flash-001",
                                  system_instruction=jsonInstruction,
@@ -51,3 +55,11 @@ class GeminiClient(object):
             respText
             )
         return response.text
+    
+    def parse(self, text) -> bool:
+        try:
+            contents = text.replace('```json', '').replace('```', '')
+            json.loads(contents)
+            return True
+        except ValueError as e:
+            return False
