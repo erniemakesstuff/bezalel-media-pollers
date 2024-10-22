@@ -36,9 +36,12 @@ class GeminiClient(object):
         response = self.model.generate_content(
             prompt_text
             )
-        return self.sanitize_json(response.text)
+        return self.sanitize_json(respText=response.text, retryCount=0)
     
-    def sanitize_json(self, respText) ->str:
+    def sanitize_json(self, respText, retryCount) ->str:
+        maxRetries = 3
+        if retryCount > maxRetries:
+            return Exception("max retries exceeded for sanitizing json")
         isValidJson = self.parse(respText)
         if isValidJson:
             return respText
@@ -58,7 +61,7 @@ class GeminiClient(object):
         isValidJson = self.parse(response.text)
         if isValidJson:
             return response.text
-        return self.sanitize_json(response.text)
+        return self.sanitize_json(respText=response.text, retryCount=retryCount+1)
     
     def parse(self, text) -> bool:
         try:
