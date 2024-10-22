@@ -42,10 +42,11 @@ class GeminiClient(object):
         isValidJson = self.parse(respText)
         if isValidJson:
             return respText
-
+        print("Detected invalid json")
         jsonInstruction = """
-            Transform the input text to be valid json.
-            Respond with the valid json output.
+            The following input is invalid json.
+            You will transform the input into valid json, and
+            return syntactically correct json.
             ###
         """
         self.model = GenerativeModel("gemini-1.5-flash-001",
@@ -54,7 +55,10 @@ class GeminiClient(object):
         response = self.model.generate_content(
             respText
             )
-        return response.text
+        isValidJson = self.parse(response.text)
+        if isValidJson:
+            return response.text
+        return self.sanitize_json(response.text)
     
     def parse(self, text) -> bool:
         try:
