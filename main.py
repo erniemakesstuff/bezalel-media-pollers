@@ -11,6 +11,8 @@ from botocore.exceptions import ClientError
 
 import queue_wrapper
 from callbacks.callback_factory import CallbackFactory
+from callbacks.text_callback import TextCallbackHandler
+from callbacks.render_callback import RenderCallbackHandler
 import clients.gemini as gemini
 
 logger = logging.getLogger(__name__)
@@ -33,6 +35,19 @@ visibility_timeout_seconds = 60 # TODO: Update this longer!
 poll_delay_seconds = 5 # Polling interval
 max_workers = 1 # TODO: probably not needed anymore: generators should use max container resources on single-op.
 
+# Local testing convenience
+if targetGenerator == 'local':
+    while True:
+        try:
+            queue_wrapper.poll(media_text_queue, TextCallbackHandler(targetGenerator=targetGenerator).handle_message,
+                            visibility_timeout_seconds,
+                            poll_delay_seconds)
+            queue_wrapper.poll(media_render_queue, TextCallbackHandler(targetGenerator=targetGenerator).handle_message,
+                            visibility_timeout_seconds,
+                            poll_delay_seconds)
+        except Exception:
+            print("exception in poller: " + traceback.format_exc())
+
 
 callback_handler = CallbackFactory().getCallbackInstance(targetGenerator=targetGenerator)
 work_queue = ""
@@ -43,12 +58,11 @@ elif targetGenerator == 'Render':
 else:
     raise Exception("invalid targetGenerator: " + targetGenerator)
 logger.info("Starting polling...")
-print("polling")
 # TODO: only one poller should be active! Remove duplicate pollers when
 # containerizing. Added only for local-dev convenience.
 while True:
     try:
-        queue_wrapper.poll(media_text_queue, callback_handler.handle_message,
+        queue_wrapper.poll(work_queue, callback_handler.handle_message,
                         visibility_timeout_seconds,
                         poll_delay_seconds)
     except Exception:
