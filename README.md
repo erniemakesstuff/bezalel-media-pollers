@@ -18,7 +18,11 @@ Write your current venv Pipfile to a requirements.txt for pip to use:
 `docker build -t poller --build-arg AwsSecretId=$AWS_ACCESS_KEY_ID --build-arg AwsSecretKey=$AWS_SECRET_ACCESS_KEY --build-arg AwsRegion=$AWS_REGION .`
 `docker run -it -e TARGET_GENERATOR="Text" poller`
 
-
+# Pushing to ECR
+`aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 971422718801.dkr.ecr.us-west-2.amazonaws.com`
+`docker build -t bezalel-truevine-media-consumer --build-arg AwsSecretId=$AWS_ACCESS_KEY_ID --build-arg AwsSecretKey=$AWS_SECRET_ACCESS_KEY --build-arg AwsRegion=$AWS_REGION .`
+`docker tag bezalel-truevine-media-consumer:latest 971422718801.dkr.ecr.us-west-2.amazonaws.com/bezalel-truevine-media-consumer:latest`
+`docker push 971422718801.dkr.ecr.us-west-2.amazonaws.com/bezalel-truevine-media-consumer:latest`
 # Resources / Notes
 Python Gemeni Vertex API: https://cloud.google.com/vertex-ai/generative-ai/docs/start/quickstarts/quickstart-multimodal
 Setting service account keys: https://cloud.google.com/docs/authentication/provide-credentials-adc#local-key
