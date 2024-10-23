@@ -10,45 +10,20 @@ from botocore.exceptions import ClientError
 import clients.gemini as gemini
 import s3_wrapper
 logger = logging.getLogger(__name__)
-class CallbackHandler(object):
+# Final publish blogs, or videos.
+class RenderCallbackHandler(object):
     blogDistributionFormats = [
         "blog", "tinyblog", "integblog"
     ]
-    geminiInst = None
-    targetGenerator = None
     def __new__(cls, targetGenerator):
         if not hasattr(cls, 'instance'):
-             cls.instance = super(CallbackHandler, cls).__new__(cls)
-        cls.targetGenerator = targetGenerator
-        cls.geminiInst = gemini.GeminiClient()
+             cls.instance = super(RenderCallbackHandler, cls).__new__(cls)
         return cls.instance
-
+    # Common interface.
     def handle_message(self, mediaEvent) -> bool:
         logger.info("MediaType: " + mediaEvent.MediaType)
-        result = False
-        if mediaEvent.MediaType.lower() == "text":
-            result = self.handle_script_text(mediaEvent)
-        if mediaEvent.MediaType.lower() == "render":
-            result = self.handle_render(mediaEvent=mediaEvent)
-        return result
+        return self.handle_render(mediaEvent)
 
-    def handle_script_text(self, mediaEvent) -> bool:
-        logger.info("SystemPromptInstruction: " + mediaEvent.SystemPromptInstruction)
-        logger.info("PromptInstruction: " + mediaEvent.PromptInstruction)
-        # local console
-        print("SystemPromptInstruction: " + mediaEvent.SystemPromptInstruction)
-        print("PromptInstruction: " + mediaEvent.PromptInstruction)
-        resultText = self.geminiInst.call_model(mediaEvent.SystemPromptInstruction, mediaEvent.PromptInstruction)
-        if not resultText:
-            return False
-        # TODO store s3 by callback id.
-        fileName = mediaEvent.ContentLookupKey + ".txt"
-        with open(fileName, "w") as text_file:
-            text_file.write(resultText)
-        success = s3_wrapper.upload_file(fileName, mediaEvent.ContentLookupKey)
-        os.remove(fileName)
-        print("Generated conetent: " + resultText)
-        return success
     
     def handle_render(self, mediaEvent) -> bool:
         if not mediaEvent.FinalRenderSequences or mediaEvent.FinalRenderSequences is None:
