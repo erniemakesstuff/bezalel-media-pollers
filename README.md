@@ -15,8 +15,8 @@ Set VisualStudioCode interpreter to your .venv path.
 Write your current venv Pipfile to a requirements.txt for pip to use:
 `pipenv run pipenv_to_requirements -f`
 
-`docker build -t poller --build-arg AwsSecretId=$AWS_ACCESS_KEY_ID --build-arg AwsSecretKey=$AWS_SECRET_ACCESS_KEY --build-arg AwsRegion=$AWS_REGION --build-arg TargetGeneration=Text .`
-`docker run poller`
+`docker build -t poller --build-arg AwsSecretId=$AWS_ACCESS_KEY_ID --build-arg AwsSecretKey=$AWS_SECRET_ACCESS_KEY --build-arg AwsRegion=$AWS_REGION .`
+`docker run -e TARGET_GENERATOR="Text" poller`
 
 
 # Resources / Notes

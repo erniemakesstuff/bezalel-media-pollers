@@ -43,6 +43,7 @@ elif targetGenerator == 'Render':
 else:
     raise Exception("invalid targetGenerator: " + targetGenerator)
 logger.info("Starting polling...")
+print("polling")
 # TODO: only one poller should be active! Remove duplicate pollers when
 # containerizing. Added only for local-dev convenience.
 while True:
