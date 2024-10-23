@@ -42,7 +42,7 @@ if targetGenerator == 'local':
             queue_wrapper.poll(media_text_queue, TextCallbackHandler(targetGenerator=targetGenerator).handle_message,
                             visibility_timeout_seconds,
                             poll_delay_seconds)
-            queue_wrapper.poll(media_render_queue, TextCallbackHandler(targetGenerator=targetGenerator).handle_message,
+            queue_wrapper.poll(media_render_queue, RenderCallbackHandler(targetGenerator=targetGenerator).handle_message,
                             visibility_timeout_seconds,
                             poll_delay_seconds)
         except Exception:
