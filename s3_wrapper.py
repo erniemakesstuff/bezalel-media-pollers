@@ -28,7 +28,7 @@ def upload_file(file_path_name, callbackId) -> bool:
     try:
         response = s3_client.upload_file(file_path_name, bucket, callbackId)
     except ClientError as e:
-        logging.error(e)
+        logging.error("upload failed for file {0} with error {1}".format(file_path_name, e))
         return False
     return True
 
@@ -43,6 +43,6 @@ def download_file(remote_file_name, save_to_filename) -> bool:
     try:
         response = s3_client.download_file(bucket, remote_file_name, save_to_filename)
     except ClientError as e:
-        logging.error(e)
+        logging.error("download failed for file {0} save as {1} with error {2}".format(remote_file_name, save_to_filename, e))
         return False
     return True

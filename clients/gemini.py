@@ -21,6 +21,14 @@ class GeminiClient(object):
             category=SafetySetting.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
             threshold=SafetySetting.HarmBlockThreshold.BLOCK_ONLY_HIGH,
         ),
+        SafetySetting(
+            category=SafetySetting.HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY,
+            threshold=SafetySetting.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        ),
+        SafetySetting(
+            category=SafetySetting.HarmCategory.HARM_CATEGORY_UNSPECIFIED,
+            threshold=SafetySetting.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        ),
     ]
     def __new__(cls):
         if not hasattr(cls, 'instance'):
