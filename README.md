@@ -15,8 +15,11 @@ Set VisualStudioCode interpreter to your .venv path.
 Write your current venv Pipfile to a requirements.txt for pip to use:
 `pipenv run pipenv_to_requirements -f`
 
-`docker build -t poller --build-arg AwsSecretId=$AWS_ACCESS_KEY_ID --build-arg AwsSecretKey=$AWS_SECRET_ACCESS_KEY --build-arg AwsRegion=$AWS_REGION .`
-`docker run -it -e TARGET_GENERATOR="Text" poller`
+`docker build -t bezalel-truevine-media-consumer --build-arg AwsSecretId=$AWS_ACCESS_KEY_ID --build-arg AwsSecretKey=$AWS_SECRET_ACCESS_KEY --build-arg AwsRegion=$AWS_REGION .`
+`docker run -it -e TARGET_GENERATOR="Text" -p 8080:8080 bezalel-truevine-media-consumer`
+
+# Running Service Locally
+`python main.py`
 
 # Pushing to ECR
 `aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 971422718801.dkr.ecr.us-west-2.amazonaws.com`

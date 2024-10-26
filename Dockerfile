@@ -19,7 +19,8 @@ COPY . .
 RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
-
-RUN pip install --no-cache-dir -r requirements.txt
-
+# --no-cache-dir
+RUN pip install -r requirements.txt
+RUN pip install flask
+EXPOSE 8080
 ENTRYPOINT ["sh", "./startup.sh"]
