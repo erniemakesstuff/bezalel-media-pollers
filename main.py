@@ -1,17 +1,33 @@
 import multiprocessing
 import logging
+import sys
 import health_service
 import consumer
 
-logger = logging.getLogger(__name__)
+file_handler = logging.FileHandler(filename='tmp.log')
+stdout_handler = logging.StreamHandler(stream=sys.stdout)
+handlers = [file_handler, stdout_handler]
 
+logging.basicConfig(
+    level=logging.INFO, 
+    format='[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',
+    handlers=handlers
+)
+
+logger = logging.getLogger(__name__)
 logger.info("starting server and consumers")
 app = health_service.app # Flask run initializes server.
-# TODO: Update this to NOT expose all interaces; remove 0.0...
-serviceListener = multiprocessing.Process(target=app.run(port=8080, debug=True))
-processConsumer = multiprocessing.Process(target=consumer.start_poll)
-processConsumer.start() # Async pollers in background; no need to wait/join. Infinite.
-serviceListener.start()
-logger.info("services started")
-processConsumer.join()
-serviceListener.join()
+
+if __name__ ==  '__main__':
+    logger.info("creating processes")
+    processConsumer = multiprocessing.Process(target=consumer.start_poll)
+    logger.info("start consumer")
+    processConsumer.start() # Async pollers in background; no need to wait/join. Infinite.
+
+    serviceListener = multiprocessing.Process(target=app.run(port=8080, debug=True))
+    logger.info("start service listener")
+    serviceListener.start()
+
+    logger.info("services started")
+    processConsumer.join()
+    serviceListener.join()
