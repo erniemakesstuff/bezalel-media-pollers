@@ -15,7 +15,6 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
-logger.info("starting server and consumers")
 app = health_service.app # Flask run initializes server.
 
 if __name__ ==  '__main__':
@@ -24,7 +23,7 @@ if __name__ ==  '__main__':
     logger.info("start consumer")
     processConsumer.start() # Async pollers in background; no need to wait/join. Infinite.
 
-    serviceListener = multiprocessing.Process(target=app.run(port=8080, debug=True))
+    serviceListener = multiprocessing.Process(target=app.run(port=8080, debug=True, host='0.0.0.0'))
     logger.info("start service listener")
     serviceListener.start()
 
