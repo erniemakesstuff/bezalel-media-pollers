@@ -27,15 +27,15 @@ class RenderCallbackHandler(object):
     
     def handle_render(self, mediaEvent) -> bool:
         if not mediaEvent.FinalRenderSequences or mediaEvent.FinalRenderSequences is None:
-            print("correlationID: {0} received empty render request".format(mediaEvent.LedgerID))
+            logger.info("correlationID: {0} received empty render request".format(mediaEvent.LedgerID))
             return False
         # TODO store s3 by callback id.
         # TODO will be final media aggregate in destination format by distributionFormat
         if mediaEvent.DistributionFormat.lower() in self.blogDistributionFormats:
-            print("correlationID: {0} calling handle final render blog".format(mediaEvent.LedgerID))
+            logger.info("correlationID: {0} calling handle final render blog".format(mediaEvent.LedgerID))
             return self.handle_final_render_blog(mediaEvent=mediaEvent)
         
-        print("correlationID: {0} no matching distribution format to handle: {1}".format(mediaEvent.LedgerID,
+        logger.info("correlationID: {0} no matching distribution format to handle: {1}".format(mediaEvent.LedgerID,
                                                                                          mediaEvent.DistributionFormat))
         return False
     
@@ -54,7 +54,7 @@ class RenderCallbackHandler(object):
                 break
                 
         if not successfulDownload:
-            print("correlationID: {0} failed to download file: {1}".format(mediaEvent.LedgerID, finalRender.ContentLookupKey))
+            logger.info("correlationID: {0} failed to download file: {1}".format(mediaEvent.LedgerID, finalRender.ContentLookupKey))
             return successfulDownload
         fileName = mediaEvent.ContentLookupKey + ".json"
         with open(fileName, "w") as text_file:

@@ -29,8 +29,8 @@ class TextCallbackHandler(object):
         logger.info("SystemPromptInstruction: " + mediaEvent.SystemPromptInstruction)
         logger.info("PromptInstruction: " + mediaEvent.PromptInstruction)
         # local console
-        print("SystemPromptInstruction: " + mediaEvent.SystemPromptInstruction)
-        print("PromptInstruction: " + mediaEvent.PromptInstruction)
+        logger.info("SystemPromptInstruction: " + mediaEvent.SystemPromptInstruction)
+        logger.info("PromptInstruction: " + mediaEvent.PromptInstruction)
         resultText = self.geminiInst.call_model(mediaEvent.SystemPromptInstruction, mediaEvent.PromptInstruction)
         if not resultText:
             return False
@@ -40,5 +40,5 @@ class TextCallbackHandler(object):
             text_file.write(resultText)
         success = s3_wrapper.upload_file(fileName, mediaEvent.ContentLookupKey)
         os.remove(fileName)
-        print("Generated conetent: " + resultText)
+        logger.info("Generated conetent: " + resultText)
         return success

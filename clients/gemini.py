@@ -1,7 +1,8 @@
 import json
+import logging
 import vertexai
 from vertexai.generative_models import GenerativeModel, SafetySetting
-
+logger = logging.getLogger(__name__)
 class GeminiClient(object):
     model = None
     safety_config = [
@@ -53,7 +54,7 @@ class GeminiClient(object):
         isValidJson = self.parse(respText)
         if isValidJson:
             return respText
-        print("Detected invalid json")
+        logger.info("Detected invalid json")
         jsonInstruction = """
             The following input is invalid json.
             You will transform the input into valid json, and

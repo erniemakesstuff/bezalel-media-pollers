@@ -43,13 +43,13 @@ def start_poll():
                                 visibility_timeout_seconds,
                                 poll_delay_seconds)
             except Exception:
-                print("exception in poller: " + traceback.format_exc())
+                logger.info("exception in poller: " + traceback.format_exc())
             try:
                 queue_wrapper.poll(media_render_queue, RenderCallbackHandler(targetGenerator=targetGenerator).handle_message,
                                 visibility_timeout_seconds,
                                 poll_delay_seconds)
             except Exception:
-                print("exception in poller: " + traceback.format_exc())
+                logger.info("exception in poller: " + traceback.format_exc())
 
 
     callback_handler = CallbackFactory().getCallbackInstance(targetGenerator=targetGenerator)
@@ -69,4 +69,4 @@ def start_poll():
                             visibility_timeout_seconds,
                             poll_delay_seconds)
         except Exception:
-            print("exception in poller: " + traceback.format_exc())
+            logger.info("exception in poller: " + traceback.format_exc())
