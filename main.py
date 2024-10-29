@@ -23,7 +23,7 @@ if __name__ ==  '__main__':
     logger.info("start consumer")
     processConsumer.start() # Async pollers in background; no need to wait/join. Infinite.
 
-    serviceListener = multiprocessing.Process(target=app.run(port=8080, debug=True, host='0.0.0.0'))
+    serviceListener = multiprocessing.Process(target=app.run(port=5050, debug=True, host='0.0.0.0'))
     logger.info("start service listener")
     serviceListener.start()
 
