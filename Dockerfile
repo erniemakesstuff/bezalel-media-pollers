@@ -15,12 +15,15 @@ WORKDIR /app
  
 # Copies everything from your root directory into /app
 COPY . .
-
+RUN apt-get update
+RUN apt-get install curl -y curl jq
 RUN apt-get update && apt-get install -y \
     build-essential \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* 
 # --no-cache-dir
 RUN pip install -r requirements.txt
 RUN pip install flask
 EXPOSE 8080
+EXPOSE 80
+EXPOSE 443
 ENTRYPOINT ["sh", "./startup.sh"]
