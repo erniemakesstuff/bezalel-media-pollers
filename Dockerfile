@@ -9,6 +9,7 @@ ENV AWS_ACCESS_KEY_ID=$AwsSecretId
 ENV AWS_SECRET_ACCESS_KEY=$AwsSecretKey
 ENV AWS_REGION=$AwsRegion
 ENV TARGET_GENERATION="SET ME ON RUN EXEC"
+ENV GOOGLE_APPLICATION_CREDENTIALS="./localkey.json"
  
 # Creates an app directory to hold your app’s source code
 WORKDIR /app
