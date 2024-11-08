@@ -1,5 +1,3 @@
-# TODO: Replace this w/ GPU enabled container image.
-# Use CUDA image? ? 
 FROM --platform=linux/amd64 python:3.9-slim-bullseye 
 
 ARG AwsSecretKey
