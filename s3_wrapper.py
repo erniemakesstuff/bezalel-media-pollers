@@ -4,6 +4,7 @@ import boto3
 import os
 import logging
 from botocore.exceptions import ClientError
+import botocore
 session = boto3.Session(
     region_name= os.environ['AWS_REGION'],
     aws_access_key_id= os.environ['AWS_ACCESS_KEY_ID'],
@@ -46,3 +47,13 @@ def download_file(remote_file_name, save_to_filename) -> bool:
         logging.error("download failed for file {0} save as {1} with error {2}".format(remote_file_name, save_to_filename, e))
         return False
     return True
+
+def media_exists(remote_file_name) -> bool:
+    try:
+        s3_client.head_object(Bucket=bucket, Key=remote_file_name)
+        return True
+    except botocore.exceptions.ClientError as e:
+        if e.response['Error']['Code'] == "404":
+            return False
+    
+    return False

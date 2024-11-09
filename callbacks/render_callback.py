@@ -22,6 +22,8 @@ class RenderCallbackHandler(object):
     # Common interface.
     def handle_message(self, mediaEvent) -> bool:
         logger.info("MediaType: " + mediaEvent.MediaType)
+        if s3_wrapper.media_exists(mediaEvent.ContentLookupKey):
+            return True
         return self.handle_render(mediaEvent)
 
     

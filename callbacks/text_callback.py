@@ -23,12 +23,11 @@ class TextCallbackHandler(object):
     # Common interface.
     def handle_message(self, mediaEvent) -> bool:
         logger.info("MediaType: " + mediaEvent.MediaType)
+        if s3_wrapper.media_exists(mediaEvent.ContentLookupKey):
+            return True
         return self.handle_script_text(mediaEvent)
 
     def handle_script_text(self, mediaEvent) -> bool:
-        logger.info("SystemPromptInstruction: " + mediaEvent.SystemPromptInstruction)
-        logger.info("PromptInstruction: " + mediaEvent.PromptInstruction)
-        # local console
         logger.info("SystemPromptInstruction: " + mediaEvent.SystemPromptInstruction)
         logger.info("PromptInstruction: " + mediaEvent.PromptInstruction)
         resultText = self.geminiInst.call_model(mediaEvent.SystemPromptInstruction, mediaEvent.PromptInstruction)
