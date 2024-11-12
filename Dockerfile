@@ -25,4 +25,4 @@ RUN pip install flask
 EXPOSE 8080
 EXPOSE 80
 EXPOSE 443
-ENTRYPOINT ["sh", "./startup.sh"]
+ENTRYPOINT ["./startup.sh"]
