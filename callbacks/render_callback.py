@@ -58,7 +58,7 @@ class RenderCallbackHandler(object):
         if not successfulDownload:
             logger.info("correlationID: {0} failed to download file: {1}".format(mediaEvent.LedgerID, finalRender.ContentLookupKey))
             return successfulDownload
-        fileName = mediaEvent.ContentLookupKey + ".json"
+        fileName = os.environ["SHARED_MEDIA_VOLUME_PATH"] + mediaEvent.ContentLookupKey + ".json"
         with open(fileName, "w") as text_file:
             text_file.write(finalBlogPayload)
         success = s3_wrapper.upload_file(fileName, mediaEvent.ContentLookupKey)

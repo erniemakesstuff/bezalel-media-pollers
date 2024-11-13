@@ -33,8 +33,9 @@ class TextCallbackHandler(object):
         resultText = self.geminiInst.call_model(mediaEvent.SystemPromptInstruction, mediaEvent.PromptInstruction)
         if not resultText:
             return False
+        resultText = resultText.replace('```json', '').replace('```', '')
         # TODO store s3 by callback id.
-        fileName = mediaEvent.ContentLookupKey + ".txt"
+        fileName = os.environ["SHARED_MEDIA_VOLUME_PATH"] + mediaEvent.ContentLookupKey + ".txt"
         with open(fileName, "w") as text_file:
             text_file.write(resultText)
         success = s3_wrapper.upload_file(fileName, mediaEvent.ContentLookupKey)

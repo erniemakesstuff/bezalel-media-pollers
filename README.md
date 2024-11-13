@@ -1,6 +1,8 @@
 Media pollers will read from their respective SQS. Events trigger
 requests to downstream LLMs, and results are uploaded to S3.
 
+Should be hosted as a sidecare to containerized diffusion models.
+
 # Usage
 Start shell environment
 `pipenv shell`
@@ -19,6 +21,9 @@ Write your current venv Pipfile to a requirements.txt for pip to use:
 `docker run -it -e TARGET_GENERATOR="Text" -p 8080:8080 bezalel-truevine-media-consumer`
 
 # Running Service Locally
+Set envs:
+SHARED_MEDIA_VOLUME_PATH="./tmp_media/"
+TARGET_GENERATOR="local"
 `python main.py`
 
 # Pushing to ECR
