@@ -26,6 +26,10 @@ SHARED_MEDIA_VOLUME_PATH="./tmp_media/"
 TARGET_GENERATOR="local"
 `python main.py`
 
+If expecting volume results from another generator process, use a common path on the machine.
+Set env if running locally outside container:
+`export SHARED_MEDIA_VOLUME_PATH="/Users/owner/tmp_media/"`
+
 # Pushing to ECR
 `aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 971422718801.dkr.ecr.us-west-2.amazonaws.com`
 `docker build -t bezalel-truevine-media-consumer --build-arg AwsSecretId=$AWS_ACCESS_KEY_ID --build-arg AwsSecretKey=$AWS_SECRET_ACCESS_KEY --build-arg AwsRegion=$AWS_REGION .`
