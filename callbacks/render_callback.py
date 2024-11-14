@@ -52,7 +52,7 @@ class RenderCallbackHandler(object):
                     return successfulDownload
                 
                 with open(mediaEvent.ContentLookupKey, 'r') as file:
-                    finalBlogPayload = file.read().replace('```json', '').replace('```', '')
+                    finalBlogPayload = file.read()
                 break
                 
         if not successfulDownload:
