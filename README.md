@@ -40,3 +40,5 @@ Python Gemeni Vertex API: https://cloud.google.com/vertex-ai/generative-ai/docs/
 Setting service account keys: https://cloud.google.com/docs/authentication/provide-credentials-adc#local-key
 - Ensure you set the localkey.json from the service account keys in project root.
 
+If you see two duplicate log entires when running locally, it's because there are two file handlers being used for output.
+
