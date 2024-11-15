@@ -3,6 +3,7 @@ import os
 import json
 import logging
 import sys
+from urllib.parse import urlencode
 import requests
 import boto3
 import time
@@ -34,8 +35,11 @@ class ImageCallbackHandler(object):
             "promptInstruction": mediaEvent.PromptInstruction,
             "contentLookupKey": mediaEvent.ContentLookupKey,
         }
-        result = requests.post(url, requestObj, verify=False, timeout=180)
+        headers = {'Accept': '*/*',
+        'Content-Type': 'application/json' }
+        result = requests.post(url, json.dumps(requestObj), verify=False, timeout=180, headers=headers)
         if not result.ok:
+            logger.error("failed to call generator: " + result.reason)
             return False
         
         # TODO store s3 by callback id if integrating with third-party apis.
