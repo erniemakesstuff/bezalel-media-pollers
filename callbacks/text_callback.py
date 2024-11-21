@@ -30,7 +30,7 @@ class TextCallbackHandler(object):
     def handle_script_text(self, mediaEvent) -> bool:
         logger.info("SystemPromptInstruction: " + mediaEvent.SystemPromptInstruction)
         logger.info("PromptInstruction: " + mediaEvent.PromptInstruction)
-        resultText = self.geminiInst.call_model(mediaEvent.SystemPromptInstruction, mediaEvent.PromptInstruction)
+        resultText = self.geminiInst.call_model_json_out(mediaEvent.SystemPromptInstruction, mediaEvent.PromptInstruction)
         if not resultText:
             return False
         resultText = resultText.replace('```json', '').replace('```', '')

@@ -43,7 +43,7 @@ class ImageCallbackHandler(object):
             return False
         
         # TODO store s3 by callback id if integrating with third-party apis.
-        fileName = os.environ["SHARED_MEDIA_VOLUME_PATH"] + mediaEvent.ContentLookupKey + ".png"
+        fileName = os.environ["SHARED_MEDIA_VOLUME_PATH"] + mediaEvent.ContentLookupKey
 
         # wait for the file to be ready
         max_wait_iterations = 5 # 5min
@@ -53,7 +53,7 @@ class ImageCallbackHandler(object):
             time.sleep(60)
             wait_iteration += 1
 
-        if os.path.exists(fileName):
+        if not os.path.exists(fileName):
             logger.info("File was not generated; timeout: " + fileName)
             return False
         

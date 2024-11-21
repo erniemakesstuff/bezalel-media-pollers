@@ -45,7 +45,11 @@ class GeminiClient(object):
         response = self.model.generate_content(
             prompt_text
             )
-        return self.sanitize_json(respText=response.text, retryCount=0)
+        return response.text
+    
+    def call_model_json_out(self, system_instruction, prompt_text) -> str:
+        return self.sanitize_json(respText=self.call_model(system_instruction=system_instruction,
+                                                            prompt_text=prompt_text), retryCount=0)
     
     def sanitize_json(self, respText, retryCount) ->str:
         maxRetries = 3
