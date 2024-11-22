@@ -17,6 +17,7 @@ WORKDIR /app
  
 # Copies everything from your root directory into /app
 COPY . .
+RUN apt-get clean
 RUN apt-get update
 RUN apt-get install curl -y curl jq
 RUN apt-get update && apt-get install -y \
