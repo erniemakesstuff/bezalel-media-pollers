@@ -87,6 +87,27 @@ class TextCallbackHandler(object):
                 IDK ==> I don't know.
                 WYD ==> What are you doing.
                 IDC ==> I don't care.
+                AFAIK ==> As far as I know.
+                AITA ==> Am I the asshole?
+                AMA ==> Ask me anything.
+                ELI5 ==> Explain it like I'm five.
+                IAMA ==> I am a.
+                IANAD ==> I'm not a doctor.
+                IANAL ==> I'm not a lawyer.
+                IMO ==> In my opinion.
+                NSFL ==> Not safe for life.
+                NSFW ==> Not safe for work.
+                NTA ==> Not the asshole.
+                SMH ==> Shaking my head.
+                TD;LR ==> Too long didn't read.
+                TLDR ==> Too long didn't read.
+                TIL ==> Today I learned.
+                YTA ==> You're the asshole.
+                SAHM ==> Stay at home mother.
+                WIBTA ==> Would I be the asshole.
+                STFU ==> Shut the fuck up.
+                OP ==> original poster.
+                CB ==> Choosing beggar.
             
             Replace any curse words or politically sensitive terms with a family friendly alternative.
                 Example:
