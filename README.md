@@ -3,6 +3,13 @@ requests to downstream LLMs, and results are uploaded to S3.
 
 Should be hosted as a sidecare to containerized diffusion models.
 
+Generally, this repository should be treated as the monolith for multimodal generation.
+Lightweight processes that do not require a model such as an LLM should be included here.
+For example, calls to AWS Polly, Gemini, etc are lightweight service calls; no intensive inference or generation work is done.
+
+Note: SimpleImageGenerator was created to explore container sidecars and shared volume mounts. The calls to Lexica can and should
+be added here. SimpleImageGenerator will host a dedicated stable diffusion model in the future.
+
 # Usage
 Start shell environment
 `pipenv shell`
