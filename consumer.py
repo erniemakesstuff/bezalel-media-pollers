@@ -14,6 +14,7 @@ from callbacks.callback_factory import CallbackFactory
 from callbacks.text_callback import TextCallbackHandler
 from callbacks.render_callback import RenderCallbackHandler
 from callbacks.image_callback import ImageCallbackHandler
+from callbacks.vocal_callback import VocalCallbackHandler
 import clients.gemini as gemini
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,7 @@ targetGenerator = os.environ['TARGET_GENERATOR']
 media_text_queue = "https://sqs.us-west-2.amazonaws.com/971422718801/media-text-queue"
 media_render_queue = "https://sqs.us-west-2.amazonaws.com/971422718801/media-render-queue"
 media_image_queue = "https://sqs.us-west-2.amazonaws.com/971422718801/media-image-queue"
+media_vocal_queue = "https://sqs.us-west-2.amazonaws.com/971422718801/media-vocal-queue"
 visibility_timeout_seconds = 60 # TODO: Update this longer!
 poll_delay_seconds = 5 # Polling interval
 max_workers = 1 # TODO: probably not needed anymore: generators should use max container resources on single-op.
@@ -58,6 +60,12 @@ def start_poll():
                                 poll_delay_seconds)
             except Exception:
                 logger.info("exception in poller: " + traceback.format_exc())
+            try:
+                queue_wrapper.poll(media_vocal_queue, VocalCallbackHandler(targetGenerator=targetGenerator).handle_message,
+                                visibility_timeout_seconds,
+                                poll_delay_seconds)
+            except Exception:
+                logger.info("exception in poller: " + traceback.format_exc())
 
 
     callback_handler = CallbackFactory().getCallbackInstance(targetGenerator=targetGenerator)
@@ -68,6 +76,8 @@ def start_poll():
         work_queue = media_render_queue
     elif targetGenerator == 'Image':
         work_queue = media_image_queue
+    elif targetGenerator == 'Vocal':
+        work_queue = media_vocal_queue
     else:
         raise Exception("invalid targetGenerator: " + targetGenerator)
     logger.info("Starting polling...")
