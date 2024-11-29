@@ -38,55 +38,62 @@ media_vocal_queue = "https://sqs.us-west-2.amazonaws.com/971422718801/media-voca
 visibility_timeout_seconds = 60 # TODO: Update this longer!
 poll_delay_seconds = 5 # Polling interval
 max_workers = 1 # TODO: probably not needed anymore: generators should use max container resources on single-op.
-def start_poll():
-    # Local testing convenience
-    if targetGenerator == 'local':
+class Consumer:
+    def __new__(cls):
+        logger.info("created new consumer instance: " + str(os.getpid()))
+        if not hasattr(cls, 'instance'):
+            cls.instance = super(Consumer, cls).__new__(cls)
+        return cls.instance
+     
+    def start_poll(self):
+        # Local testing convenience
+        if targetGenerator == 'local':
+            while True:
+                try:
+                    queue_wrapper.poll(media_text_queue, TextCallbackHandler(targetGenerator=targetGenerator).handle_message,
+                                    visibility_timeout_seconds,
+                                    poll_delay_seconds)
+                except Exception:
+                    logger.info("exception in poller: " + traceback.format_exc())
+                try:
+                    queue_wrapper.poll(media_render_queue, RenderCallbackHandler(targetGenerator=targetGenerator).handle_message,
+                                    visibility_timeout_seconds,
+                                    poll_delay_seconds)
+                except Exception:
+                    logger.info("exception in poller: " + traceback.format_exc())
+                try:
+                    queue_wrapper.poll(media_image_queue, ImageCallbackHandler(targetGenerator=targetGenerator).handle_message,
+                                    visibility_timeout_seconds,
+                                    poll_delay_seconds)
+                except Exception:
+                    logger.info("exception in poller: " + traceback.format_exc())
+                try:
+                    queue_wrapper.poll(media_vocal_queue, VocalCallbackHandler(targetGenerator=targetGenerator).handle_message,
+                                    visibility_timeout_seconds,
+                                    poll_delay_seconds)
+                except Exception:
+                    logger.info("exception in poller: " + traceback.format_exc())
+
+
+        callback_handler = CallbackFactory().getCallbackInstance(targetGenerator=targetGenerator)
+        work_queue = ""
+        if targetGenerator == 'Text':
+            work_queue = media_text_queue
+        elif targetGenerator == 'Render':
+            work_queue = media_render_queue
+        elif targetGenerator == 'Image':
+            work_queue = media_image_queue
+        elif targetGenerator == 'Vocal':
+            work_queue = media_vocal_queue
+        else:
+            raise Exception("invalid targetGenerator: " + targetGenerator)
+        logger.info("Starting polling...")
+        # TODO: only one poller should be active! Remove duplicate pollers when
+        # containerizing. Added only for local-dev convenience.
         while True:
             try:
-                queue_wrapper.poll(media_text_queue, TextCallbackHandler(targetGenerator=targetGenerator).handle_message,
+                queue_wrapper.poll(work_queue, callback_handler.handle_message,
                                 visibility_timeout_seconds,
                                 poll_delay_seconds)
             except Exception:
                 logger.info("exception in poller: " + traceback.format_exc())
-            try:
-                queue_wrapper.poll(media_render_queue, RenderCallbackHandler(targetGenerator=targetGenerator).handle_message,
-                                visibility_timeout_seconds,
-                                poll_delay_seconds)
-            except Exception:
-                logger.info("exception in poller: " + traceback.format_exc())
-            try:
-                queue_wrapper.poll(media_image_queue, ImageCallbackHandler(targetGenerator=targetGenerator).handle_message,
-                                visibility_timeout_seconds,
-                                poll_delay_seconds)
-            except Exception:
-                logger.info("exception in poller: " + traceback.format_exc())
-            try:
-                queue_wrapper.poll(media_vocal_queue, VocalCallbackHandler(targetGenerator=targetGenerator).handle_message,
-                                visibility_timeout_seconds,
-                                poll_delay_seconds)
-            except Exception:
-                logger.info("exception in poller: " + traceback.format_exc())
-
-
-    callback_handler = CallbackFactory().getCallbackInstance(targetGenerator=targetGenerator)
-    work_queue = ""
-    if targetGenerator == 'Text':
-        work_queue = media_text_queue
-    elif targetGenerator == 'Render':
-        work_queue = media_render_queue
-    elif targetGenerator == 'Image':
-        work_queue = media_image_queue
-    elif targetGenerator == 'Vocal':
-        work_queue = media_vocal_queue
-    else:
-        raise Exception("invalid targetGenerator: " + targetGenerator)
-    logger.info("Starting polling...")
-    # TODO: only one poller should be active! Remove duplicate pollers when
-    # containerizing. Added only for local-dev convenience.
-    while True:
-        try:
-            queue_wrapper.poll(work_queue, callback_handler.handle_message,
-                            visibility_timeout_seconds,
-                            poll_delay_seconds)
-        except Exception:
-            logger.info("exception in poller: " + traceback.format_exc())

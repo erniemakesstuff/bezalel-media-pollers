@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 import vertexai
 from vertexai.generative_models import GenerativeModel, SafetySetting
 logger = logging.getLogger(__name__)
@@ -74,6 +75,7 @@ class GeminiClient(object):
         isValidJson = self.parse(response.text)
         if isValidJson:
             return response.text
+        time.sleep(15)
         return self.sanitize_json(respText=response.text, retryCount=retryCount+1)
     
     def parse(self, text) -> bool:

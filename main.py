@@ -1,5 +1,6 @@
 import multiprocessing
 import logging
+import os
 import sys
 import health_service
 import consumer
@@ -15,18 +16,20 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
-app = health_service.app # Flask run initializes server.
 
-if __name__ ==  '__main__':
-    logger.info("creating processes")
-    processConsumer = multiprocessing.Process(target=consumer.start_poll)
+def start_serving():
+    return health_service.app.run(port=5050, debug=False, host='0.0.0.0')
+
+if __name__ == '__main__':
+    poller = consumer.Consumer()
+    multiprocessing.set_start_method('fork')
+    processConsumer = multiprocessing.Process(target=poller.start_poll)
     logger.info("start consumer")
     processConsumer.start() # Async pollers in background; no need to wait/join. Infinite.
-
-    serviceListener = multiprocessing.Process(target=app.run(port=5050, debug=True, host='0.0.0.0'))
+    serviceListener = multiprocessing.Process(target=start_serving)
     logger.info("start service listener")
     serviceListener.start()
-
+    
     logger.info("services started")
     processConsumer.join()
     serviceListener.join()

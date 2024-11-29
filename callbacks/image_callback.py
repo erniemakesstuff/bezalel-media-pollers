@@ -22,14 +22,11 @@ class ImageCallbackHandler(object):
         return cls.instance
     # Common interface.
     def handle_message(self, mediaEvent) -> bool:
-        logger.info("MediaType: " + mediaEvent.MediaType)
         if s3_wrapper.media_exists(mediaEvent.ContentLookupKey):
             return True
         return self.handle_image_generation(mediaEvent)
 
     def handle_image_generation(self, mediaEvent) -> bool:
-        logger.info("SystemPromptInstruction: " + mediaEvent.SystemPromptInstruction)
-        logger.info("PromptInstruction: " + mediaEvent.PromptInstruction)
         url = os.environ["SIMPLE_IMAGE_GENERATOR_ENDPOINT"]
         requestObj = {
             "promptInstruction": mediaEvent.PromptInstruction,

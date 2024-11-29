@@ -27,7 +27,7 @@ def poll(queue_url: str, callbackFunc, visibilityTimeout, waitTimeSeconds):
         WaitTimeSeconds=waitTimeSeconds
     )
     if not "Messages" in response:
-        logger.info("EMPTY Q: " + queue_url)
+        logger.info(str(os.getpid()) + " EMPTY Q: " + queue_url)
         return
     message = response['Messages'][0]
     receipt_handle = message['ReceiptHandle']
