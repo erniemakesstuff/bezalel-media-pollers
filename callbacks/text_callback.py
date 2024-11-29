@@ -97,7 +97,7 @@ class TextCallbackHandler(object):
             Replace any acronyms with their expanded expression.
                 Example: 
                 IDK ==> I don't know.
-                WYD ==> What are you doing.
+                WYD ==> What are you doing?
                 IDC ==> I don't care.
                 AFAIK ==> As far as I know.
                 AITA ==> Am I the asshole?
@@ -116,12 +116,12 @@ class TextCallbackHandler(object):
                 TIL ==> Today I learned.
                 YTA ==> You're the asshole.
                 SAHM ==> Stay at home mother.
-                WIBTA ==> Would I be the asshole.
+                WIBTA ==> Would I be the asshole?
                 STFU ==> Shut the fuck up.
-                OP ==> original poster.
+                OP ==> O P.
                 CB ==> Choosing beggar.
             
-            Replace any curse words or politically sensitive terms with a family friendly alternative.
+            Replace any curse words or politically sensitive terms with a advertiser and brand friendly alternative.
                 Example:
                 Suicide ==> Unalive.
                 Fuck ==> Frack.
@@ -130,6 +130,7 @@ class TextCallbackHandler(object):
                 Kill ==> Slay.
                 Murder ==> Dispatch.
                 Bitch ==> Nasty woman.
+                Nazi ==> oppressive regime.
 
             Do not reformat the text. Only perform word and phrase replacement.
             ###
@@ -139,14 +140,11 @@ class TextCallbackHandler(object):
         if self.editor_forbidden in evalText:
             self.send_to_s3(contentLookupKey=mediaEvent.ContentLookupKey, text=evalText)
             return evalText
-        logger.info(str(os.getpid()) + " EVAL TEXT JAIL: " + evalText + "\n\n")
         time.sleep(15)
         evalText = self.geminiInst.call_model(evalInstruction, mediaEvent.PromptInstruction)
         if self.editor_forbidden in evalText:
             self.send_to_s3(contentLookupKey=mediaEvent.ContentLookupKey, text=evalText)
             return evalText
-        logger.info("EVAL TEXT EVAL: " + evalText + "\n\n")
         time.sleep(15)
         sanitizedText = self.geminiInst.call_model(sanitizeInstruction, mediaEvent.PromptInstruction)
-        logger.info("SANITIZED: " + sanitizedText + "\n\n")
         return sanitizedText
