@@ -10,6 +10,8 @@ flask = "*"
 moviepy = "*"
 whisper-timestamped = "*"
 ez-setup = "*"
+ffmpeg = "*"
+imageio = "*"
 
 [dev-packages]
 

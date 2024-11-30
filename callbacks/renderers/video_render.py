@@ -19,11 +19,10 @@ import whisper_timestamped as whisper
 logger = logging.getLogger(__name__)
 
 class RenderClip(object):
-    def __new__(cls, clip, renderMetadata, subtitles = []):
-        cls.clip = clip
-        cls.renderMetadata = renderMetadata
-        cls.subtitles = subtitles
-        return cls
+    def __init__(self, clip, render_metadata, subtitles = []):
+        self.clip = clip
+        self.render_metadata = render_metadata
+        self.subtitles = subtitles
 
 class VideoRender(object):
     def __new__(cls):
@@ -40,13 +39,13 @@ class VideoRender(object):
         # TODO: call different compilation final step based on this flag.
         is_shortform = mediaEvent.DistributionFormat == 'ShortVideo'
         language = mediaEvent.Language
-        video_clips = self.collect_render_clips_by_media_type(mediaEvent.FinalRenderSequences, 'Video', language)
-        image_clips = self.collect_render_clips_by_media_type(mediaEvent.FinalRenderSequences, 'Image', language) # lang=> if we need to overlay text info
-        narator_clips = self.collect_render_clips_by_media_type(mediaEvent.FinalRenderSequences, 'Vocal', language)
-        music_clips = self.collect_render_clips_by_media_type(mediaEvent.FinalRenderSequences, 'Music', language) # lang=> songs dubbing
-        sfx_clips = self.collect_render_clips_by_media_type(mediaEvent.FinalRenderSequences, 'Sfx', language)
-
         
+        video_title = self.get_video_title(mediaEvent.FinalRenderSequences)
+        self.perform_render(is_short_form=is_shortform, video_title=video_title,
+                            language=language,
+                            final_render_sequences=mediaEvent.FinalRenderSequences,
+                            watermark_text="TrueVineMedia",
+                            local_save_as="testVideo.mp4")
 
         #fileName = os.environ["SHARED_MEDIA_VOLUME_PATH"] + mediaEvent.ContentLookupKey + ".json"
         #with open(fileName, "w") as text_file:
@@ -76,7 +75,11 @@ class VideoRender(object):
 
     def download_media(self, content_lookup_key, status):
         localFilename = os.environ["SHARED_MEDIA_VOLUME_PATH"] + content_lookup_key
-        status.append( s3_wrapper.download_file(content_lookup_key, localFilename))
+        if os.path(localFilename):
+            # already exists, return
+            status.append(True)
+            return
+        status.append(s3_wrapper.download_file(content_lookup_key, localFilename))
 
     def cleanup_local_files(self, final_render_sequences):
         for s in final_render_sequences:
@@ -84,25 +87,29 @@ class VideoRender(object):
             os.remove(filename)
 
     def collect_render_clips_by_media_type(self, final_render_sequences, target_media_type, transcriptionLanguage = "en"):
-        clips = []
+        clips = list()
         for s in final_render_sequences:
             if s.MediaType != target_media_type:
                 continue
 
             filename = os.environ["SHARED_MEDIA_VOLUME_PATH"] + s.ContentLookupKey
-            if target_media_type == 'Vocal':
+            if s.MediaType == 'Vocal':
                 subtitles = self.get_transcribed_text(filename=filename, language=transcriptionLanguage)
-                clips.append(RenderClip(clip=AudioFileClip(filename), renderMetadata=s, subtitles=subtitles))
-            elif target_media_type == 'Music':
+                clips.append(RenderClip(clip=AudioFileClip(filename), render_metadata=s, subtitles=subtitles))
+            elif s.MediaType == 'Music':
+                #return clips
                 # TODO dubbing? For music videos.
-                clips.append(RenderClip(clip=AudioFileClip(filename), renderMetadata=s))
-            elif target_media_type == 'Sfx':
-                clips.append(RenderClip(clip=AudioFileClip(filename), renderMetadata=s))
-            elif target_media_type == 'Video':
-                clips.append(RenderClip(clip=VideoFileClip(filename), renderMetadata=s))
+                clips.append(RenderClip(clip=AudioFileClip(filename), render_metadata=s))
+            elif s.MediaType == 'Sfx':
+                #return clips
+                clips.append(RenderClip(clip=AudioFileClip(filename), render_metadata=s))
+            elif s.MediaType == 'Video':
+                clips.append(RenderClip(clip=VideoFileClip(filename), render_metadata=s))
             elif target_media_type == 'Image':
                 # TODO overlay text? Probably not.
-                clips.append(RenderClip(clip=ImageClip(filename), renderMetadata=s))
+                clips.append(RenderClip(clip=ImageClip(filename), render_metadata=s))
+            elif target_media_type == 'Text':
+                clips.append(RenderClip(clip=TextClip(filename), render_metadata=s))
             else:
                 raise Exception('unsupported media type to moviepy clip')
 
@@ -138,32 +145,63 @@ class VideoRender(object):
 
         return title
     
-    def perform_render(is_short_form, video_title,
-                       image_clips,
-                       video_clips,
-                       vocal_clips,
-                       music_clips,
-                       sfx_clips,
+    def perform_render(self, is_short_form, video_title,
+                       final_render_sequences,
+                       language,
                        watermark_text,
                        local_save_as) -> bool:
+        video_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Video', language)
+        image_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Image', language) # lang=> if we need to overlay text info
+        vocal_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Vocal', language) # Some fucky override is happening here
+        music_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Music', language) # lang=> songs dubbing
+        sfx_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Sfx', language)
+
         max_length_short_video_sec = 59
         # If clipFile is prefixed with b --> mute.
         # Otherwise, reduce background clip volume by 30%
         # TODO: separate logic for music videos
         is_music_video = len(vocal_clips) == 0 and len(music_clips) > 0
         
+        # TODO reduce background music 30%.
 
+        visual_layer = self.create_visual_layer(image_clips=image_clips, video_clips=video_clips)
+        composite = CompositeVideoClip(np.array(self.collect_moviepy_clips(visual_layer)))
+        composite.preview(fps=5)
         # TODO watermark
         return True
     
     def create_visual_layer(self, image_clips, video_clips):
         visual_clips = []
-        clipIter = ""
         # TODO: Group and order by PositionLayer + RenderSequence
-        # Sequence full-screen content first
-        # Then sequence partials overlaying
-        for i in image_clips:
-            image_duration_sec = 2
-            i.duration(image_duration_sec)
-            visual_clips.append(i)
+        # Sequence full-screen content first.
+        # Then sequence partials overlaying.
+        self.set_image_clips_duration(image_clips=image_clips, duration_sec=2)
+        self.set_additive_sequencing_by_position_layer(image_clips, 'Fullscreen', visual_clips)
+        self.set_additive_sequencing_by_position_layer(video_clips, 'Fullscreen', visual_clips)
+        # TODO: other position layers.
+        # TODO: close all moviepy clips.
         return visual_clips
+    
+    def set_image_clips_duration(self, image_clips, duration_sec):
+        for i, ic in enumerate(image_clips):
+            image_clips[i].clip = image_clips[i].clip.with_duration(duration_sec)
+
+    def set_additive_sequencing_by_position_layer(self, clips, position_layer, layer_to_update):
+        for i, curRenderClip in enumerate(clips):
+            curRenderClip.render_metadata.PositionLayer == position_layer
+            if i >= 1:
+                prev_clip = clips[i - 1].clip
+                curRenderClip.clip.with_start(prev_clip.end)
+            layer_to_update.append(curRenderClip)
+
+    def collect_moviepy_clips(self, render_clips):
+        movie_clips = []
+        for r in render_clips:
+            movie_clips.append(r.clip)
+        return movie_clips
+    
+    def set_background_audio_on_visual_clips(self, visual_clips):
+        #for v in visual_clips:
+        #    AudioFileClip().with_effects(afx.)
+        #    VideoFileClip().with_effects()
+        return True
