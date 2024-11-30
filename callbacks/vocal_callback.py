@@ -17,7 +17,6 @@ class VocalCallbackHandler(object):
     def __new__(cls, targetGenerator):
         if not hasattr(cls, 'instance'):
              cls.instance = super(VocalCallbackHandler, cls).__new__(cls)
-             cls.geminiInst = gemini.GeminiClient()
         return cls.instance
     # Common interface.
     def handle_message(self, mediaEvent) -> bool:
@@ -27,10 +26,7 @@ class VocalCallbackHandler(object):
 
     
     def handle_render(self, mediaEvent) -> bool:
-        if not mediaEvent.FinalRenderSequences or mediaEvent.FinalRenderSequences is None:
-            logger.info("correlationID: {0} received empty render request".format(mediaEvent.LedgerID))
-            return False
-        
+        logger.info("correlationID: {0} called vocal handler".format(mediaEvent.LedgerID))
         return self.handle_vocal_generation(mediaEvent=mediaEvent)
     
     def handle_vocal_generation(self, mediaEvent) -> bool:

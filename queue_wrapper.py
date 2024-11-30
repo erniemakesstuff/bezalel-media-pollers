@@ -33,11 +33,8 @@ def poll(queue_url: str, callbackFunc, visibilityTimeout, waitTimeSeconds):
     receipt_handle = message['ReceiptHandle']
     sqsBodyStr = message["Body"]
     messageDetails = json.loads(sqsBodyStr)
-    mediaEvent =  json.loads(messageDetails["Message"], object_hook=lambda d: SimpleNamespace(**d))
-    if mediaEvent.FinalRenderSequences:
-        mediaEvent.FinalRenderSequences = json.loads(mediaEvent.FinalRenderSequences, object_hook=lambda d: SimpleNamespace(**d))
+    mediaEvent = to_media_event(messageDetails["Message"])
    
-
     success = callbackFunc(mediaEvent)
     if success:
         sqs.delete_message(
@@ -46,3 +43,9 @@ def poll(queue_url: str, callbackFunc, visibilityTimeout, waitTimeSeconds):
         )
     else:
         logger.error("failed to process message: " + mediaEvent.EventID)
+
+def to_media_event(payload):
+    mediaEvent = json.loads(payload, object_hook=lambda d: SimpleNamespace(**d))
+    if mediaEvent.FinalRenderSequences:
+        mediaEvent.FinalRenderSequences = json.loads(mediaEvent.FinalRenderSequences, object_hook=lambda d: SimpleNamespace(**d))
+    return mediaEvent
