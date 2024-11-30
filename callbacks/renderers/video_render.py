@@ -109,7 +109,9 @@ class VideoRender(object):
                 # TODO overlay text? Probably not.
                 clips.append(RenderClip(clip=ImageClip(filename), render_metadata=s))
             elif target_media_type == 'Text':
-                clips.append(RenderClip(clip=TextClip(filename), render_metadata=s))
+                return clips
+                # TODO: Need to unpack this first to raw-text, not json.
+                #clips.append(RenderClip(clip=TextClip(filename), render_metadata=s))
             else:
                 raise Exception('unsupported media type to moviepy clip')
 
@@ -152,49 +154,83 @@ class VideoRender(object):
                        local_save_as) -> bool:
         video_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Video', language)
         image_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Image', language) # lang=> if we need to overlay text info
-        vocal_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Vocal', language) # Some fucky override is happening here
+        vocal_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Vocal', language)
         music_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Music', language) # lang=> songs dubbing
         sfx_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Sfx', language)
+        # TODO: Support text clips
+        #text_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Text', language)
 
         max_length_short_video_sec = 59
         # If clipFile is prefixed with b --> mute.
         # Otherwise, reduce background clip volume by 30%
         # TODO: separate logic for music videos
         is_music_video = len(vocal_clips) == 0 and len(music_clips) > 0
-        
         # TODO reduce background music 30%.
 
-        visual_layer = self.create_visual_layer(image_clips=image_clips, video_clips=video_clips)
-        composite = CompositeVideoClip(np.array(self.collect_moviepy_clips(visual_layer)))
-        composite.preview(fps=5)
+
+        visual_layer = self.__create_visual_layer(image_clips=image_clips, video_clips=video_clips)
+        audio_layer = self.__create_audio_layer(vocal_clips, music_clips, sfx_clips)
+        
+        composite_video = CompositeVideoClip(np.array(
+            self.__collect_moviepy_clips(visual_layer)))
+        composite_audio = CompositeAudioClip(np.array(
+            self.__collect_moviepy_clips(audio_layer)
+        ))
+        composite_video.preview(fps=10)
         # TODO watermark
         return True
     
-    def create_visual_layer(self, image_clips, video_clips):
-        visual_clips = []
+    def __create_visual_layer(self, image_clips, video_clips):
         # TODO: Group and order by PositionLayer + RenderSequence
         # Sequence full-screen content first.
         # Then sequence partials overlaying.
-        self.set_image_clips_duration(image_clips=image_clips, duration_sec=2)
-        self.set_additive_sequencing_by_position_layer(image_clips, 'Fullscreen', visual_clips)
-        self.set_additive_sequencing_by_position_layer(video_clips, 'Fullscreen', visual_clips)
+        self.__set_image_clips_duration(image_clips=image_clips, duration_sec=2)
+        visual_clips = image_clips + video_clips
+        self.__combine_sequences(layer_clips=visual_clips)
         # TODO: other position layers.
-        # TODO: close all moviepy clips.
+        # TODO: ensure close all moviepy clips.
         return visual_clips
     
-    def set_image_clips_duration(self, image_clips, duration_sec):
+    def __create_audio_layer(self, vocal_clips, music_clips, sfx_clips):
+        audio_layer = vocal_clips + sfx_clips
+        self.__combine_sequences(audio_layer)
+
+        # contiguous background_music
+        self.__combine_sequences(music_clips)
+        return audio_layer + music_clips
+    
+    def __set_image_clips_duration(self, image_clips, duration_sec):
         for i, ic in enumerate(image_clips):
             image_clips[i].clip = image_clips[i].clip.with_duration(duration_sec)
 
-    def set_additive_sequencing_by_position_layer(self, clips, position_layer, layer_to_update):
-        for i, curRenderClip in enumerate(clips):
-            curRenderClip.render_metadata.PositionLayer == position_layer
-            if i >= 1:
-                prev_clip = clips[i - 1].clip
-                curRenderClip.clip.with_start(prev_clip.end)
-            layer_to_update.append(curRenderClip)
+    def __combine_sequences(self, layer_clips):
+        # allocate grouping by sequence numbers
+        sequenceNumberToClipsList = {}
 
-    def collect_moviepy_clips(self, render_clips):
+        for rclip in layer_clips:
+            render_sequence = rclip.render_metadata.RenderSequence
+            if render_sequence not in sequenceNumberToClipsList:
+                sequenceNumberToClipsList[render_sequence] = []
+            
+            sequenceNumberToClipsList[render_sequence].append(rclip)
+        
+        # assign start times
+        for i, rclip in enumerate(layer_clips):
+            render_sequence = rclip.render_metadata.RenderSequence
+            prev_render_sequence = render_sequence - 1
+            if prev_render_sequence in sequenceNumberToClipsList:
+                clips_in_prev_sequence = sequenceNumberToClipsList[prev_render_sequence]
+                max_end_clip = self.__get_longest_render_clip(clips_in_prev_sequence)
+                layer_clips[i].clip = rclip.clip.with_start(max_end_clip.clip.end)
+
+    def __get_longest_render_clip(self, clips):
+        max_dur_clip = clips[0]
+        for rc in clips:
+            if rc.clip.duration > max_dur_clip.clip.duration:
+                max_dur_clip = rc
+        return max_dur_clip
+        
+    def __collect_moviepy_clips(self, render_clips):
         movie_clips = []
         for r in render_clips:
             movie_clips.append(r.clip)
