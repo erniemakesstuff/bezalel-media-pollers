@@ -41,13 +41,12 @@ class VideoRender(object):
         is_shortform = mediaEvent.DistributionFormat == 'ShortVideo'
         language = mediaEvent.Language
         video_clips = self.collect_render_clips_by_media_type(mediaEvent.FinalRenderSequences, 'Video', language)
-        image_clips = self.collect_render_clips_by_media_type(mediaEvent.FinalRenderSequences, 'Image', language)
+        image_clips = self.collect_render_clips_by_media_type(mediaEvent.FinalRenderSequences, 'Image', language) # lang=> if we need to overlay text info
         narator_clips = self.collect_render_clips_by_media_type(mediaEvent.FinalRenderSequences, 'Vocal', language)
-        music_clips = self.collect_render_clips_by_media_type(mediaEvent.FinalRenderSequences, 'Music', language) # songs
+        music_clips = self.collect_render_clips_by_media_type(mediaEvent.FinalRenderSequences, 'Music', language) # lang=> songs dubbing
         sfx_clips = self.collect_render_clips_by_media_type(mediaEvent.FinalRenderSequences, 'Sfx', language)
 
-        # TODO: separate logic for music videos
-        is_music_video = len(narator_clips) == 0 and len(music_clips) > 0
+        
 
         #fileName = os.environ["SHARED_MEDIA_VOLUME_PATH"] + mediaEvent.ContentLookupKey + ".json"
         #with open(fileName, "w") as text_file:
@@ -84,7 +83,7 @@ class VideoRender(object):
             filename = os.environ["SHARED_MEDIA_VOLUME_PATH"] + s.ContentLookupKey
             os.remove(filename)
 
-    def collect_render_clips_by_media_type(self, final_render_sequences, target_media_type, transcriptionLanguage):
+    def collect_render_clips_by_media_type(self, final_render_sequences, target_media_type, transcriptionLanguage = "en"):
         clips = []
         for s in final_render_sequences:
             if s.MediaType != target_media_type:
@@ -95,12 +94,14 @@ class VideoRender(object):
                 subtitles = self.get_transcribed_text(filename=filename, language=transcriptionLanguage)
                 clips.append(RenderClip(clip=AudioFileClip(filename), renderMetadata=s, subtitles=subtitles))
             elif target_media_type == 'Music':
+                # TODO dubbing? For music videos.
                 clips.append(RenderClip(clip=AudioFileClip(filename), renderMetadata=s))
             elif target_media_type == 'Sfx':
                 clips.append(RenderClip(clip=AudioFileClip(filename), renderMetadata=s))
             elif target_media_type == 'Video':
                 clips.append(RenderClip(clip=VideoFileClip(filename), renderMetadata=s))
             elif target_media_type == 'Image':
+                # TODO overlay text? Probably not.
                 clips.append(RenderClip(clip=ImageClip(filename), renderMetadata=s))
             else:
                 raise Exception('unsupported media type to moviepy clip')
@@ -137,10 +138,32 @@ class VideoRender(object):
 
         return title
     
-    def perform_render(is_short_form, is_music_video, video_title,
+    def perform_render(is_short_form, video_title,
                        image_clips,
                        video_clips,
                        vocal_clips,
                        music_clips,
-                       sfx_clips) -> str:
-        return ""
+                       sfx_clips,
+                       watermark_text,
+                       local_save_as) -> bool:
+        max_length_short_video_sec = 59
+        # If clipFile is prefixed with b --> mute.
+        # Otherwise, reduce background clip volume by 30%
+        # TODO: separate logic for music videos
+        is_music_video = len(vocal_clips) == 0 and len(music_clips) > 0
+        
+
+        # TODO watermark
+        return True
+    
+    def create_visual_layer(self, image_clips, video_clips):
+        visual_clips = []
+        clipIter = ""
+        # TODO: Group and order by PositionLayer + RenderSequence
+        # Sequence full-screen content first
+        # Then sequence partials overlaying
+        for i in image_clips:
+            image_duration_sec = 2
+            i.duration(image_duration_sec)
+            visual_clips.append(i)
+        return visual_clips
