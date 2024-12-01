@@ -1,3 +1,4 @@
+import copy
 import math
 import multiprocessing
 from pathlib import Path
@@ -164,35 +165,64 @@ class VideoRender(object):
         #text_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Text', language)
 
         max_length_short_video_sec = 59
-        # If clipFile is prefixed with b --> mute.
-        # Otherwise, reduce background clip volume by 30%
-        # TODO: separate logic for music videos
-        is_music_video = len(vocal_clips) == 0 and len(music_clips) > 0
-        # TODO reduce background music 30%.
 
 
         visual_layer = self.__create_visual_layer(image_clips=image_clips, 
                                                   video_clips=video_clips, video_title=video_title)
+        #self.__resize_clips(visual_layer, is_short_form)
         audio_layer = self.__create_audio_layer(vocal_clips, music_clips, sfx_clips)
-        
+        # TODO watermark
+
         composite_video = CompositeVideoClip(np.array(
             self.__collect_moviepy_clips(visual_layer)))
-        audio_layer = self.__collect_moviepy_clips(audio_layer)
-        audio_layer.append(composite_video.audio)
+        composite_video = composite_video.resized(height=480)
+        is_music_video = len(vocal_clips) == 0 and len(music_clips) > 0
+        should_mute = is_short_form or is_music_video
+        self.__reduce_background_audio(composite_video=composite_video, should_mute=should_mute)
+        self.__reduce_background_music(audio_layer=audio_layer, is_music_video=is_music_video)
+        audio_layer_clips = self.__collect_moviepy_clips(audio_layer)
+        audio_layer_clips.append(composite_video.audio)
+
         composite_audio = CompositeAudioClip(np.array(
-            audio_layer
+            audio_layer_clips
         ))
+
         composite_video = composite_video.with_audio(composite_audio)
+        aspect_ratio = '16:9'
+        if is_short_form:
+            aspect_ratio = '9:16'
+        composite_video.write_videofile(local_save_as, fps=20, audio=True, audio_codec="aac", ffmpeg_params=['-crf','18', '-aspect', aspect_ratio])
         
-        composite_video.write_videofile(local_save_as, fps=24, audio=True, audio_codec="aac")
-        # TODO watermark
         return True
-    
+    def __resize_clips(self, visual_clips, is_short_form):
+        # Not documented, but apparently supposed to only set EITHER height or width.
+        # Issue: https://github.com/Zulko/moviepy/issues/547
+        height = 854
+        if is_short_form:
+            height = 480
+        for rc in visual_clips:
+            if rc.render_metadata.MediaType == 'Video' or rc.render_metadata.MediaType == 'Image':
+                rc.clip = rc.clip.resized(height=height)
+
+    def __reduce_background_audio(self, composite_video, should_mute):
+        decrease_by_percent = 0.4
+        if should_mute:
+            decrease_by_percent = 0 # scale to zero
+        composite_video.audio = composite_video.audio.with_volume_scaled(decrease_by_percent)
+    def __reduce_background_music(self, audio_layer, is_music_video):
+        if is_music_video:
+            # Keep any background music at 100
+            return
+        reduce_by_percent = 0.5
+        for rc in audio_layer:
+            if rc.render_metadata.PositionLayer == 'BackgroundMusic':
+                rc.clip = rc.clip.with_volume_scaled(reduce_by_percent)
+        
     def __create_visual_layer(self, image_clips, video_clips, video_title):
         # TODO: Group and order by PositionLayer + RenderSequence
         # Sequence full-screen content first.
         # Then sequence partials overlaying.
-        self.__set_image_clips_duration(image_clips=image_clips, duration_sec=2)
+        self.__set_image_clips(image_clips=image_clips, duration_sec=2)
         visual_clips = image_clips + video_clips
         self.__combine_sequences(layer_clips=visual_clips)
         self.__set_thumbnail_text_rclip(video_title=video_title, visual_clips=visual_clips)
@@ -215,8 +245,6 @@ class VideoRender(object):
         partition_index = math.floor(len(words_formatted) * .70)
         video_title_top = " ".join(words_formatted[:partition_index])
         video_title_bottom = " ".join(words_formatted[partition_index:])
-        logger.info("VideoTitleTop: " + video_title_top)
-        logger.info("VideoTitleBottom: " + video_title_bottom)
         thumbnail_dur_sec = 2
         yellow = "#FFFF00"
         red = "#FF0000"
@@ -228,6 +256,9 @@ class VideoRender(object):
         elif randomNum < 7 and randomNum > 4:
             secondary_color = lime_green
         thumbnail_clip = self.__get_thumbnail_render_clip(visual_clips)
+        height = thumbnail_clip.clip.h
+        top = 0
+        bottom = 100000 # 0,0 px top left
         thumbnail_text_1 = TextClip(
             font="Impact",
             text=video_title_top,
@@ -235,8 +266,7 @@ class VideoRender(object):
             color="#FFFFFF",
             stroke_color="#000000",
             stroke_width=5,
-            text_align="center",
-        ).with_position("center", "center").with_duration(thumbnail_dur_sec).with_start(thumbnail_clip.clip.start)
+        ).with_position(("center","center")).with_duration(thumbnail_dur_sec).with_start(thumbnail_clip.clip.start)
         thumbnail_text_2 = TextClip(
             font="Impact",
             text=video_title_bottom,
@@ -244,10 +274,11 @@ class VideoRender(object):
             stroke_width=5,
             color=secondary_color,
             stroke_color="#000000",
-            text_align="center",
-        ).with_position("center", "bottom").with_duration(thumbnail_dur_sec).with_start(thumbnail_clip.clip.start)
-        visual_clips.append(RenderClip(clip=thumbnail_text_1, render_metadata=thumbnail_clip.render_metadata))
-        visual_clips.append(RenderClip(clip=thumbnail_text_2, render_metadata=thumbnail_clip.render_metadata))
+        ).with_position(("center", "bottom")).with_duration(thumbnail_dur_sec).with_start(thumbnail_clip.clip.start)
+        render_meta_copy = copy.copy(thumbnail_clip.render_metadata)
+        render_meta_copy.MediaType = 'Text'
+        visual_clips.append(RenderClip(clip=thumbnail_text_1, render_metadata=render_meta_copy))
+        visual_clips.append(RenderClip(clip=thumbnail_text_2, render_metadata=render_meta_copy))
     
     def __get_thumbnail_render_clip(self, visual_clips):
         for rc in visual_clips:
@@ -262,9 +293,10 @@ class VideoRender(object):
         self.__combine_sequences(music_clips)
         return audio_layer + music_clips
     
-    def __set_image_clips_duration(self, image_clips, duration_sec):
+    def __set_image_clips(self, image_clips, duration_sec):
         for i, ic in enumerate(image_clips):
             image_clips[i].clip = image_clips[i].clip.with_duration(duration_sec)
+            image_clips[i].clip = image_clips[i].clip.with_position("center", "center")
 
     def __combine_sequences(self, layer_clips):
         # allocate grouping by sequence numbers
