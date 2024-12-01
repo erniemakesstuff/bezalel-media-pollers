@@ -1,5 +1,7 @@
+import math
 import multiprocessing
 from pathlib import Path
+import random
 from types import SimpleNamespace
 import os
 import json
@@ -41,13 +43,14 @@ class VideoRender(object):
         language = mediaEvent.Language
         
         video_title = self.get_video_title(mediaEvent.FinalRenderSequences)
+        local_file_name = os.environ["SHARED_MEDIA_VOLUME_PATH"] + mediaEvent.ContentLookupKey + ".mp4"
         self.perform_render(is_short_form=is_shortform, video_title=video_title,
                             language=language,
                             final_render_sequences=mediaEvent.FinalRenderSequences,
                             watermark_text="TrueVineMedia",
-                            local_save_as="testVideo.mp4")
+                            local_save_as=local_file_name)
 
-        #fileName = os.environ["SHARED_MEDIA_VOLUME_PATH"] + mediaEvent.ContentLookupKey + ".json"
+        
         #with open(fileName, "w") as text_file:
         #    text_file.write()
         #success = s3_wrapper.upload_file(fileName, mediaEvent.ContentLookupKey)
@@ -135,14 +138,14 @@ class VideoRender(object):
     def get_video_title(self, final_render_sequences) -> str:
         title = "A great video!"
         for s in final_render_sequences:
-            if s.MediaType != 'Text' and s.PositionLayer == 'HiddenScript':
+            if s.MediaType == 'Text' and s.PositionLayer == 'HiddenScript':
                 # no need to downlaod from s3; handled by download_all in previous call
                 # defer cleanup
                 local_file_name = os.environ["SHARED_MEDIA_VOLUME_PATH"] + s.ContentLookupKey
                 with open(local_file_name, 'r') as file:
                     payload = file.read()
                 script = json.loads(payload)
-                title = script.videoTitle
+                title = script['videoTitle']
                 break
 
         return title
@@ -168,29 +171,89 @@ class VideoRender(object):
         # TODO reduce background music 30%.
 
 
-        visual_layer = self.__create_visual_layer(image_clips=image_clips, video_clips=video_clips)
+        visual_layer = self.__create_visual_layer(image_clips=image_clips, 
+                                                  video_clips=video_clips, video_title=video_title)
         audio_layer = self.__create_audio_layer(vocal_clips, music_clips, sfx_clips)
         
         composite_video = CompositeVideoClip(np.array(
             self.__collect_moviepy_clips(visual_layer)))
+        audio_layer = self.__collect_moviepy_clips(audio_layer)
+        audio_layer.append(composite_video.audio)
         composite_audio = CompositeAudioClip(np.array(
-            self.__collect_moviepy_clips(audio_layer)
+            audio_layer
         ))
-        composite_video.preview(fps=10)
+        composite_video = composite_video.with_audio(composite_audio)
+        
+        composite_video.write_videofile(local_save_as, fps=24, audio=True, audio_codec="aac")
         # TODO watermark
         return True
     
-    def __create_visual_layer(self, image_clips, video_clips):
+    def __create_visual_layer(self, image_clips, video_clips, video_title):
         # TODO: Group and order by PositionLayer + RenderSequence
         # Sequence full-screen content first.
         # Then sequence partials overlaying.
         self.__set_image_clips_duration(image_clips=image_clips, duration_sec=2)
         visual_clips = image_clips + video_clips
         self.__combine_sequences(layer_clips=visual_clips)
+        self.__set_thumbnail_text_rclip(video_title=video_title, visual_clips=visual_clips)
+        
         # TODO: other position layers.
         # TODO: ensure close all moviepy clips.
         return visual_clips
+    def __set_thumbnail_text_rclip(self, video_title, visual_clips):
+        new_line_word_limit = 4
+        words = video_title.split(" ")
+        word_count = 1
+        formatted_title = ""
+        for w in words:
+            formatted_title += w
+            word_count += 1
+            if word_count % new_line_word_limit == 0:
+                formatted_title += "\n"
+            formatted_title += " "
+        words_formatted = formatted_title.split(" ")
+        partition_index = math.floor(len(words_formatted) * .70)
+        video_title_top = " ".join(words_formatted[:partition_index])
+        video_title_bottom = " ".join(words_formatted[partition_index:])
+        logger.info("VideoTitleTop: " + video_title_top)
+        logger.info("VideoTitleBottom: " + video_title_bottom)
+        thumbnail_dur_sec = 2
+        yellow = "#FFFF00"
+        red = "#FF0000"
+        lime_green = "#4be506"
+        secondary_color = yellow
+        randomNum = random.randint(0, 10)
+        if randomNum >= 7:
+            secondary_color = red
+        elif randomNum < 7 and randomNum > 4:
+            secondary_color = lime_green
+        thumbnail_clip = self.__get_thumbnail_render_clip(visual_clips)
+        thumbnail_text_1 = TextClip(
+            font="Impact",
+            text=video_title_top,
+            font_size=50,
+            color="#FFFFFF",
+            stroke_color="#000000",
+            stroke_width=5,
+            text_align="center",
+        ).with_position("center", "center").with_duration(thumbnail_dur_sec).with_start(thumbnail_clip.clip.start)
+        thumbnail_text_2 = TextClip(
+            font="Impact",
+            text=video_title_bottom,
+            font_size=50,
+            stroke_width=5,
+            color=secondary_color,
+            stroke_color="#000000",
+            text_align="center",
+        ).with_position("center", "bottom").with_duration(thumbnail_dur_sec).with_start(thumbnail_clip.clip.start)
+        visual_clips.append(RenderClip(clip=thumbnail_text_1, render_metadata=thumbnail_clip.render_metadata))
+        visual_clips.append(RenderClip(clip=thumbnail_text_2, render_metadata=thumbnail_clip.render_metadata))
     
+    def __get_thumbnail_render_clip(self, visual_clips):
+        for rc in visual_clips:
+            if rc.render_metadata.PositionLayer == 'Thumbnail':
+                return rc
+        
     def __create_audio_layer(self, vocal_clips, music_clips, sfx_clips):
         audio_layer = vocal_clips + sfx_clips
         self.__combine_sequences(audio_layer)
