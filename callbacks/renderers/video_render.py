@@ -21,6 +21,9 @@ import whisper_timestamped as whisper
 
 logger = logging.getLogger(__name__)
 
+short_form_width = 854
+long_form_width = 854
+
 class RenderClip(object):
     def __init__(self, clip, render_metadata, subtitles = []):
         self.clip = clip
@@ -95,7 +98,10 @@ class VideoRender(object):
         for s in final_render_sequences:
             if s.MediaType != target_media_type:
                 continue
-
+            if s.MediaType == 'Video' and s.ContentLookupKey != 'b23.mp4':
+                continue
+            if s.MediaType == 'Image':
+                continue
             filename = os.environ["SHARED_MEDIA_VOLUME_PATH"] + s.ContentLookupKey
             if s.MediaType == 'Vocal':
                 subtitles = self.get_transcribed_text(filename=filename, language=transcriptionLanguage)
@@ -169,13 +175,15 @@ class VideoRender(object):
 
         visual_layer = self.__create_visual_layer(image_clips=image_clips, 
                                                   video_clips=video_clips, video_title=video_title)
+        # Resize crops, not scales to fit.
+        # Looks better w/o per-clip resize.
         #self.__resize_clips(visual_layer, is_short_form)
         audio_layer = self.__create_audio_layer(vocal_clips, music_clips, sfx_clips)
         # TODO watermark
 
         composite_video = CompositeVideoClip(np.array(
             self.__collect_moviepy_clips(visual_layer)))
-        composite_video = composite_video.resized(height=480)
+        #composite_video = composite_video.resized(width=480)
         is_music_video = len(vocal_clips) == 0 and len(music_clips) > 0
         should_mute = is_short_form or is_music_video
         self.__reduce_background_audio(composite_video=composite_video, should_mute=should_mute)
@@ -191,18 +199,19 @@ class VideoRender(object):
         aspect_ratio = '16:9'
         if is_short_form:
             aspect_ratio = '9:16'
-        composite_video.write_videofile(local_save_as, fps=20, audio=True, audio_codec="aac", ffmpeg_params=['-crf','18', '-aspect', aspect_ratio])
+        composite_video.write_videofile(local_save_as, fps=20, audio=True, audio_codec="aac")#, ffmpeg_params=['-crf','18', '-aspect', aspect_ratio])
         
         return True
     def __resize_clips(self, visual_clips, is_short_form):
         # Not documented, but apparently supposed to only set EITHER height or width.
         # Issue: https://github.com/Zulko/moviepy/issues/547
-        height = 854
+        # Note, resize only width works best; moviepy adjusts height reasonably well.
+        width = long_form_width
         if is_short_form:
-            height = 480
+            width = short_form_width
         for rc in visual_clips:
             if rc.render_metadata.MediaType == 'Video' or rc.render_metadata.MediaType == 'Image':
-                rc.clip = rc.clip.resized(height=height)
+                rc.clip = rc.clip.resized(width=width)
 
     def __reduce_background_audio(self, composite_video, should_mute):
         decrease_by_percent = 0.4
@@ -225,7 +234,9 @@ class VideoRender(object):
         self.__set_image_clips(image_clips=image_clips, duration_sec=2)
         visual_clips = image_clips + video_clips
         self.__combine_sequences(layer_clips=visual_clips)
-        self.__set_thumbnail_text_rclip(video_title=video_title, visual_clips=visual_clips)
+        # TODO: Something about including the thumbnail into the Composite is breaking the aspect ratio
+        # TODO: Experiment with resizing thumbnail image first; don't even include it in visual_clips
+        #self.__set_thumbnail_text_rclip(video_title=video_title, visual_clips=visual_clips)
         
         # TODO: other position layers.
         # TODO: ensure close all moviepy clips.
