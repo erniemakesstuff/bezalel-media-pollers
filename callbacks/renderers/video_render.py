@@ -21,9 +21,6 @@ import whisper_timestamped as whisper
 
 logger = logging.getLogger(__name__)
 
-short_form_width = 854
-long_form_width = 854
-
 class RenderClip(object):
     def __init__(self, clip, render_metadata, subtitles = []):
         self.clip = clip
@@ -93,14 +90,19 @@ class VideoRender(object):
             filename = os.environ["SHARED_MEDIA_VOLUME_PATH"] + s.ContentLookupKey
             os.remove(filename)
 
-    def collect_render_clips_by_media_type(self, final_render_sequences, target_media_type, transcriptionLanguage = "en"):
+    def collect_render_clips_by_media_type(self, final_render_sequences, target_media_type, is_short_form, transcriptionLanguage = "en"):
         clips = list()
+        width = 1920
+        height = 1080
+        xc = 960
+        yc = 540
+        if is_short_form:
+            width = 1080
+            height = 1920
+            xc = 540
+            yc = 960
         for s in final_render_sequences:
             if s.MediaType != target_media_type:
-                continue
-            if s.MediaType == 'Video' and s.ContentLookupKey != 'b23.mp4':
-                continue
-            if s.MediaType == 'Image':
                 continue
             filename = os.environ["SHARED_MEDIA_VOLUME_PATH"] + s.ContentLookupKey
             if s.MediaType == 'Vocal':
@@ -114,10 +116,12 @@ class VideoRender(object):
                 #return clips
                 clips.append(RenderClip(clip=AudioFileClip(filename), render_metadata=s))
             elif s.MediaType == 'Video':
-                clips.append(RenderClip(clip=VideoFileClip(filename), render_metadata=s))
+                clips.append(RenderClip(clip=VideoFileClip(filename).cropped(x_center=xc, y_center=yc, height=height, width=width).resized(width=width)
+                                        .with_position(("center", "center")), render_metadata=s))
             elif target_media_type == 'Image':
                 # TODO overlay text? Probably not.
-                clips.append(RenderClip(clip=ImageClip(filename), render_metadata=s))
+                clips.append(RenderClip(clip=ImageClip(filename).cropped(x_center=xc, y_center=yc, height=height, width=height).resized(width=width)
+                                        .with_position(("center", "center")), render_metadata=s))
             elif target_media_type == 'Text':
                 return clips
                 # TODO: Need to unpack this first to raw-text, not json.
@@ -162,28 +166,24 @@ class VideoRender(object):
                        language,
                        watermark_text,
                        local_save_as) -> bool:
-        video_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Video', language)
-        image_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Image', language) # lang=> if we need to overlay text info
-        vocal_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Vocal', language)
-        music_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Music', language) # lang=> songs dubbing
-        sfx_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Sfx', language)
+        video_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Video', is_short_form, language)
+        image_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Image', is_short_form,language) # lang=> if we need to overlay text info
+        vocal_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Vocal', is_short_form,language)
+        music_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Music', is_short_form,language) # lang=> songs dubbing
+        sfx_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Sfx', is_short_form, language)
         # TODO: Support text clips
         #text_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Text', language)
 
-        max_length_short_video_sec = 59
+        max_length_short_video_sec = 60
 
 
         visual_layer = self.__create_visual_layer(image_clips=image_clips, 
                                                   video_clips=video_clips, video_title=video_title)
-        # Resize crops, not scales to fit.
-        # Looks better w/o per-clip resize.
-        #self.__resize_clips(visual_layer, is_short_form)
         audio_layer = self.__create_audio_layer(vocal_clips, music_clips, sfx_clips)
         # TODO watermark
 
         composite_video = CompositeVideoClip(np.array(
-            self.__collect_moviepy_clips(visual_layer)))
-        #composite_video = composite_video.resized(width=480)
+            self.__collect_moviepy_clips(visual_layer))).with_end(max_length_short_video_sec)
         is_music_video = len(vocal_clips) == 0 and len(music_clips) > 0
         should_mute = is_short_form or is_music_video
         self.__reduce_background_audio(composite_video=composite_video, should_mute=should_mute)
@@ -199,33 +199,27 @@ class VideoRender(object):
         aspect_ratio = '16:9'
         if is_short_form:
             aspect_ratio = '9:16'
-        composite_video.write_videofile(local_save_as, fps=20, audio=True, audio_codec="aac")#, ffmpeg_params=['-crf','18', '-aspect', aspect_ratio])
+        composite_video.write_videofile(local_save_as, fps=20, audio=True, audio_codec="aac", ffmpeg_params=['-crf','18', '-aspect', aspect_ratio])
         
         return True
-    def __resize_clips(self, visual_clips, is_short_form):
-        # Not documented, but apparently supposed to only set EITHER height or width.
-        # Issue: https://github.com/Zulko/moviepy/issues/547
-        # Note, resize only width works best; moviepy adjusts height reasonably well.
-        width = long_form_width
-        if is_short_form:
-            width = short_form_width
-        for rc in visual_clips:
-            if rc.render_metadata.MediaType == 'Video' or rc.render_metadata.MediaType == 'Image':
-                rc.clip = rc.clip.resized(width=width)
 
     def __reduce_background_audio(self, composite_video, should_mute):
-        decrease_by_percent = 0.4
+        reduce_to_percent = 0.4
         if should_mute:
             decrease_by_percent = 0 # scale to zero
-        composite_video.audio = composite_video.audio.with_volume_scaled(decrease_by_percent)
+        composite_video.audio = composite_video.audio.with_volume_scaled(reduce_to_percent)
     def __reduce_background_music(self, audio_layer, is_music_video):
         if is_music_video:
             # Keep any background music at 100
             return
-        reduce_by_percent = 0.5
+        reduce_to_percent = 0.3
+        increase_by_percent = 1.50
         for rc in audio_layer:
             if rc.render_metadata.PositionLayer == 'BackgroundMusic':
-                rc.clip = rc.clip.with_volume_scaled(reduce_by_percent)
+                rc.clip = rc.clip.with_volume_scaled(reduce_to_percent)
+            if rc.render_metadata.PositionLayer == 'Narrator':
+                rc.clip = rc.clip.with_volume_scaled(increase_by_percent)
+            
         
     def __create_visual_layer(self, image_clips, video_clips, video_title):
         # TODO: Group and order by PositionLayer + RenderSequence
@@ -236,7 +230,7 @@ class VideoRender(object):
         self.__combine_sequences(layer_clips=visual_clips)
         # TODO: Something about including the thumbnail into the Composite is breaking the aspect ratio
         # TODO: Experiment with resizing thumbnail image first; don't even include it in visual_clips
-        #self.__set_thumbnail_text_rclip(video_title=video_title, visual_clips=visual_clips)
+        self.__set_thumbnail_text_rclip(video_title=video_title, visual_clips=visual_clips)
         
         # TODO: other position layers.
         # TODO: ensure close all moviepy clips.
@@ -267,25 +261,23 @@ class VideoRender(object):
         elif randomNum < 7 and randomNum > 4:
             secondary_color = lime_green
         thumbnail_clip = self.__get_thumbnail_render_clip(visual_clips)
-        height = thumbnail_clip.clip.h
-        top = 0
-        bottom = 100000 # 0,0 px top left
+        
         thumbnail_text_1 = TextClip(
             font="Impact",
             text=video_title_top,
-            font_size=50,
+            font_size=100,
             color="#FFFFFF",
             stroke_color="#000000",
             stroke_width=5,
-        ).with_position(("center","center")).with_duration(thumbnail_dur_sec).with_start(thumbnail_clip.clip.start)
+        ).with_position(("center","top")).with_duration(thumbnail_dur_sec).with_start(thumbnail_clip.clip.start)
         thumbnail_text_2 = TextClip(
             font="Impact",
             text=video_title_bottom,
-            font_size=50,
+            font_size=125,
             stroke_width=5,
             color=secondary_color,
             stroke_color="#000000",
-        ).with_position(("center", "bottom")).with_duration(thumbnail_dur_sec).with_start(thumbnail_clip.clip.start)
+        ).with_position(("center", "center")).with_duration(thumbnail_dur_sec).with_start(thumbnail_clip.clip.start)
         render_meta_copy = copy.copy(thumbnail_clip.render_metadata)
         render_meta_copy.MediaType = 'Text'
         visual_clips.append(RenderClip(clip=thumbnail_text_1, render_metadata=render_meta_copy))
