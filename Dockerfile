@@ -27,9 +27,13 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* 
 
 # --no-cache-dir
+RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 RUN pip install flask
 RUN pip install moviepy
+# This downloads cude and pytorch dependencies
+# in the size of Gigabytes...
+# This will timeout if your internet is too slow.
 RUN pip install whisper-timestamped
 EXPOSE 8080
 EXPOSE 80
