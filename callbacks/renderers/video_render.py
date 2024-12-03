@@ -22,10 +22,10 @@ import whisper_timestamped as whisper
 logger = logging.getLogger(__name__)
 
 class RenderClip(object):
-    def __init__(self, clip, render_metadata, subtitles = []):
+    def __init__(self, clip, render_metadata, subtitle_segments = []):
         self.clip = clip
         self.render_metadata = render_metadata
-        self.subtitles = subtitles
+        self.subtitle_segments = subtitle_segments
 
 class VideoRender(object):
     def __new__(cls):
@@ -106,8 +106,8 @@ class VideoRender(object):
                 continue
             filename = os.environ["SHARED_MEDIA_VOLUME_PATH"] + s.ContentLookupKey
             if s.MediaType == 'Vocal':
-                subtitles = self.get_transcribed_text(filename=filename, language=transcriptionLanguage)
-                clips.append(RenderClip(clip=AudioFileClip(filename), render_metadata=s, subtitles=subtitles))
+                subtitle_segments = self.__get_transcribed_text(filename=filename, language=transcriptionLanguage)
+                clips.append(RenderClip(clip=AudioFileClip(filename), render_metadata=s, subtitle_segments=subtitle_segments))
             elif s.MediaType == 'Music':
                 #return clips
                 # TODO dubbing? For music videos.
@@ -130,15 +130,6 @@ class VideoRender(object):
                 raise Exception('unsupported media type to moviepy clip')
 
         return clips
-
-    # Ref: https://www.angel1254.com/blog/posts/word-by-word-captions
-    # Note: this should be done FIRST for narrator clips to avoid file moviepy clip file locks.
-    def get_transcribed_text(self, filename, language):
-        audio = whisper.load_audio(filename)
-        model = whisper.load_model("tiny") # tiny, base, small, medium, large
-        results = whisper.transcribe(model, audio, language=language)
-
-        return results["segments"]
     
     def get_total_duration(clips):
         seconds = 0
@@ -174,16 +165,21 @@ class VideoRender(object):
         # TODO: Support text clips
         #text_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Text', language)
 
-        max_length_short_video_sec = 60
-
-
         visual_layer = self.__create_visual_layer(image_clips=image_clips, 
                                                   video_clips=video_clips, video_title=video_title)
         audio_layer = self.__create_audio_layer(vocal_clips, music_clips, sfx_clips)
+        seconds_narration = self.__get_duration_narration(audio_layer=audio_layer)
         # TODO watermark
-
+        subtitle_layer = self.__get_subtitle_clips(audio_clips=audio_layer, is_short_form=is_short_form)
+        duration_watermark = 900
+        if seconds_narration > 0:
+            duration_watermark = seconds_narration
+        watermark_layer = self.__get_watermark_clips(watermark_text=watermark_text, duration=duration_watermark)
+        visual_clips = self.__collect_moviepy_clips(visual_layer)
+        visual_clips.extend(subtitle_layer)
+        visual_clips.extend(watermark_layer)
         composite_video = CompositeVideoClip(np.array(
-            self.__collect_moviepy_clips(visual_layer))).with_end(max_length_short_video_sec)
+            visual_clips))
         is_music_video = len(vocal_clips) == 0 and len(music_clips) > 0
         should_mute = is_short_form or is_music_video
         self.__reduce_background_audio(composite_video=composite_video, should_mute=should_mute)
@@ -194,19 +190,24 @@ class VideoRender(object):
         composite_audio = CompositeAudioClip(np.array(
             audio_layer_clips
         ))
-
+        
         composite_video = composite_video.with_audio(composite_audio)
+        if is_short_form:
+            max_length_short_video_sec = 60
+            composite_video = composite_video.with_end(max_length_short_video_sec)
+        if not is_music_video and seconds_narration > 0:
+            composite_video = composite_video.with_end(seconds_narration)
         aspect_ratio = '16:9'
         if is_short_form:
             aspect_ratio = '9:16'
-        composite_video.write_videofile(local_save_as, fps=20, audio=True, audio_codec="aac", ffmpeg_params=['-crf','18', '-aspect', aspect_ratio])
+        composite_video.write_videofile(local_save_as, fps=30, audio=True, audio_codec="aac", ffmpeg_params=['-crf','18', '-aspect', aspect_ratio])
         
         return True
 
     def __reduce_background_audio(self, composite_video, should_mute):
         reduce_to_percent = 0.4
         if should_mute:
-            decrease_by_percent = 0 # scale to zero
+            reduce_to_percent = 0 # scale to zero
         composite_video.audio = composite_video.audio.with_volume_scaled(reduce_to_percent)
     def __reduce_background_music(self, audio_layer, is_music_video):
         if is_music_video:
@@ -219,6 +220,12 @@ class VideoRender(object):
                 rc.clip = rc.clip.with_volume_scaled(reduce_to_percent)
             if rc.render_metadata.PositionLayer == 'Narrator':
                 rc.clip = rc.clip.with_volume_scaled(increase_by_percent)
+    def __get_duration_narration(self, audio_layer):
+        seconds = 0
+        for rc in audio_layer:
+            if rc.render_metadata.PositionLayer == 'Narrator':
+                seconds += rc.clip.duration
+        return seconds
             
         
     def __create_visual_layer(self, image_clips, video_clips, video_title):
@@ -243,9 +250,9 @@ class VideoRender(object):
         for w in words:
             formatted_title += w
             word_count += 1
+            formatted_title += " "
             if word_count % new_line_word_limit == 0:
                 formatted_title += "\n"
-            formatted_title += " "
         words_formatted = formatted_title.split(" ")
         partition_index = math.floor(len(words_formatted) * .70)
         video_title_top = " ".join(words_formatted[:partition_index])
@@ -261,23 +268,22 @@ class VideoRender(object):
         elif randomNum < 7 and randomNum > 4:
             secondary_color = lime_green
         thumbnail_clip = self.__get_thumbnail_render_clip(visual_clips)
-        
         thumbnail_text_1 = TextClip(
             font="Impact",
             text=video_title_top,
             font_size=100,
             color="#FFFFFF",
             stroke_color="#000000",
-            stroke_width=5,
-        ).with_position(("center","top")).with_duration(thumbnail_dur_sec).with_start(thumbnail_clip.clip.start)
+            stroke_width=10,
+        ).with_position((0.1, 0.2), relative=True).with_duration(thumbnail_dur_sec).with_start(thumbnail_clip.clip.start)
         thumbnail_text_2 = TextClip(
             font="Impact",
             text=video_title_bottom,
             font_size=125,
-            stroke_width=5,
+            stroke_width=10,
             color=secondary_color,
             stroke_color="#000000",
-        ).with_position(("center", "center")).with_duration(thumbnail_dur_sec).with_start(thumbnail_clip.clip.start)
+        ).with_position((0.1, 0.5), relative=True).with_duration(thumbnail_dur_sec).with_start(thumbnail_clip.clip.start)
         render_meta_copy = copy.copy(thumbnail_clip.render_metadata)
         render_meta_copy.MediaType = 'Text'
         visual_clips.append(RenderClip(clip=thumbnail_text_1, render_metadata=render_meta_copy))
@@ -334,8 +340,58 @@ class VideoRender(object):
             movie_clips.append(r.clip)
         return movie_clips
     
-    def set_background_audio_on_visual_clips(self, visual_clips):
-        #for v in visual_clips:
-        #    AudioFileClip().with_effects(afx.)
-        #    VideoFileClip().with_effects()
-        return True
+    def __get_subtitle_clips(self, audio_clips, is_short_form):
+        subtitles = []
+        prev_clip_dur = 0
+        for i, ac in enumerate(audio_clips):
+            if len(ac.subtitle_segments) > 0:
+                text_clips = self.__get_text_clips(text=ac.subtitle_segments, is_short_form=is_short_form, offset_sec=prev_clip_dur)
+                subtitles.extend(text_clips)
+            prev_clip_dur += ac.clip.duration
+        return subtitles
+    
+
+    # Ref: https://www.angel1254.com/blog/posts/word-by-word-captions
+    # Note: this should be done FIRST for narrator clips to avoid file moviepy clip file locks.
+    def __get_transcribed_text(self, filename, language):
+        audio = whisper.load_audio(filename)
+        model = whisper.load_model("tiny") # tiny, base, small, medium, large
+        results = whisper.transcribe(model, audio, language=language)
+
+        return results["segments"]
+    
+    def __get_text_clips(self, text, is_short_form, offset_sec):
+        text_clips = []
+        position = "bottom"
+        if is_short_form:
+            position = "center"
+        for segment in text:
+            for word in segment["words"]:
+                clip = TextClip(
+                        text=word["text"],
+                        font_size=150,
+                        stroke_width=5, 
+                        stroke_color="black", 
+                        font="Arial Bold",
+                        color="white")
+                clip = clip.with_position(("center", position))
+                clip = clip.with_start(word["start"] + offset_sec)
+                clip = clip.with_end(word["end"] + offset_sec)
+                text_clips.append(clip)
+        return text_clips
+    
+    def __get_watermark_clips(self, watermark_text, duration=900):
+        clips = []
+        water_seg_dur = duration / 4
+        clip = TextClip(
+            text=watermark_text,
+            font="Arial", # OpenType
+            color="white",
+            font_size = 40,
+        ).with_duration(water_seg_dur)
+        # x,y offsets
+        clips.append(clip.with_position((0.05, 0.95), relative=True).with_start(2)) # bottom left
+        clips.append(clip.with_position((0.7, 0.05), relative=True).with_start(water_seg_dur)) # top right
+        clips.append(clip.with_position((0.7, 0.95), relative=True).with_start(water_seg_dur * 2)) # bottom right
+        clips.append(clip.with_position((0.05, 0.05), relative=True).with_start(water_seg_dur * 3)) # top left
+        return clips
