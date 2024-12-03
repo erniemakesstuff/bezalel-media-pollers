@@ -19,13 +19,18 @@ WORKDIR /app
 COPY . .
 RUN apt-get clean
 RUN apt-get update
+RUN apt update
+RUN apt install ffmpeg -y
 RUN apt-get install curl -y curl jq
 RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/* 
+
 # --no-cache-dir
 RUN pip install -r requirements.txt
 RUN pip install flask
+RUN pip install moviepy
+RUN pip install whisper-timestamped
 EXPOSE 8080
 EXPOSE 80
 EXPOSE 443
