@@ -37,7 +37,7 @@ class TextCallbackHandler(object):
             text_file.write(text)
         success = s3_wrapper.upload_file(fileName, contentLookupKey)
         os.remove(fileName)
-        return True
+        return success
 
     def handle_script_text(self, mediaEvent) -> bool:
         promptText = mediaEvent.PromptInstruction

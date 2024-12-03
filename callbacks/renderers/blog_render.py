@@ -1,3 +1,4 @@
+from pathlib import Path
 from types import SimpleNamespace
 import os
 import json
@@ -46,7 +47,9 @@ class BlogRender(object):
             text_file.write(json_payload_str)
         success = s3_wrapper.upload_file(fileName, mediaEvent.ContentLookupKey)
         os.remove(fileName)
-        os.remove(mediaEvent.ContentLookupKey)
+        path_content = Path(mediaEvent.ContentLookupKey)
+        if path_content.is_file():
+            os.remove(mediaEvent.ContentLookupKey)
         return success
     
     def get_file_script_as_text(self, mediaEvent) -> str:

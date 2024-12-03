@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from types import SimpleNamespace
 import boto3
 import os
@@ -23,7 +24,10 @@ def upload_file(file_path_name, callbackId) -> bool:
     :param callbackId: S3 object name. Should be MediaEvent callback ID.
     :return: True if file was uploaded, else False
     """
-    
+    path_file = Path(file_path_name)
+    if path_file.is_file():
+        logger.error("unable to upload to s3 missing local file: " + file_path_name)
+        return False
     # Upload the file
     s3_client = boto3.client('s3')
     try:

@@ -35,60 +35,70 @@ class VideoRender(object):
     
     def handle_final_render_video(self, mediaEvent) -> bool:
         successful_content_download = self.download_all_content(mediaEvent.FinalRenderSequences)
+        if not successful_content_download:
+            logger.error("correlationId {0} failed to download media files for rendering".format(mediaEvent.LedgerID))
+            return False
         logger.info("Download status: " + str(successful_content_download))
-        # Short form videos are identical to long-form videos except in two area:
-        # 1) Final render resolution and aspect ratio.
-        # 2) Whether subtitles are centered word-by-word.
-        # TODO: call different compilation final step based on this flag.
         is_shortform = mediaEvent.DistributionFormat == 'ShortVideo'
         language = mediaEvent.Language
         
         video_title = self.get_video_title(mediaEvent.FinalRenderSequences)
         local_file_name = os.environ["SHARED_MEDIA_VOLUME_PATH"] + mediaEvent.ContentLookupKey + ".mp4"
-        self.perform_render(is_short_form=is_shortform, video_title=video_title,
-                            language=language,
-                            final_render_sequences=mediaEvent.FinalRenderSequences,
-                            watermark_text="TrueVineMedia",
-                            local_save_as=local_file_name)
+        render_process = multiprocessing.Process(target=self.__perform_render, args=(
+            is_shortform, video_title, mediaEvent.FinalRenderSequences, language, "TrueVineMedia", local_file_name))
+        
+        render_process.start()
+        render_process.join()
+        logger.info("Finished render process")
+        success = s3_wrapper.upload_file(local_file_name, mediaEvent.ContentLookupKey)
+        self.__cleanup_local_files(mediaEvent.FinalRenderSequences)
+        rendered_media_path = Path(local_file_name)
+        if rendered_media_path.is_file():
+            os.remove(local_file_name)
+        tmp_lookupkey = Path(mediaEvent.ContentLookupKey)
+        if tmp_lookupkey.is_file():
+            os.remove(mediaEvent.ContentLookupKey)
+        return success
 
         
-        #with open(fileName, "w") as text_file:
-        #    text_file.write()
-        #success = s3_wrapper.upload_file(fileName, mediaEvent.ContentLookupKey)
-        #os.remove(fileName)
-        #os.remove(mediaEvent.ContentLookupKey)
-        #return success
-
-        #self.cleanup_local_files(mediaEvent.FinalRenderSequences)
     
     def download_all_content(self, finalRenderSequences) -> bool:
         jobs = []
-        statuses = []
-        for s in finalRenderSequences:
-            p = multiprocessing.Process(target=self.download_media, args=(s.ContentLookupKey, statuses))
-            p.start()
-            jobs.append(p)
-        for j in jobs:
-            j.join()
-        
-        for s in statuses:
-            if not s:
-                # failure detected
+        with multiprocessing.Manager() as manager:
+            statuses = manager.list()
+            for s in finalRenderSequences:
+                p = multiprocessing.Process(target=self.download_media, args=(s.ContentLookupKey, statuses))
+                p.start()
+                jobs.append(p)
+            for j in jobs:
+                j.join()
+            
+            if len(statuses) == 0:
+                logger.error("no download statuses reported")
                 return False
+            for s in statuses:
+                if not s:
+                    # failure detected
+                    return False
         return True
 
     def download_media(self, content_lookup_key, status):
         localFilename = os.environ["SHARED_MEDIA_VOLUME_PATH"] + content_lookup_key
-        if os.path(localFilename):
+        path = Path(localFilename)
+        if path.is_file():
             # already exists, return
             status.append(True)
             return
         status.append(s3_wrapper.download_file(content_lookup_key, localFilename))
 
-    def cleanup_local_files(self, final_render_sequences):
+    def __cleanup_local_files(self, final_render_sequences):
+        logger.info("called cleanup")
         for s in final_render_sequences:
             filename = os.environ["SHARED_MEDIA_VOLUME_PATH"] + s.ContentLookupKey
-            os.remove(filename)
+            file_path = Path(filename)
+            if file_path.is_file():
+                os.remove(filename)
+            logger.info("CLEANUP: " + filename)
 
     def collect_render_clips_by_media_type(self, final_render_sequences, target_media_type, is_short_form, transcriptionLanguage = "en"):
         clips = list()
@@ -152,7 +162,7 @@ class VideoRender(object):
 
         return title
     
-    def perform_render(self, is_short_form, video_title,
+    def __perform_render(self, is_short_form, video_title,
                        final_render_sequences,
                        language,
                        watermark_text,
@@ -200,8 +210,9 @@ class VideoRender(object):
         aspect_ratio = '16:9'
         if is_short_form:
             aspect_ratio = '9:16'
+        # Write local file
         composite_video.write_videofile(local_save_as, fps=30, audio=True, audio_codec="aac", ffmpeg_params=['-crf','18', '-aspect', aspect_ratio])
-        
+        composite_video.close()
         return True
 
     def __reduce_background_audio(self, composite_video, should_mute):
@@ -242,6 +253,7 @@ class VideoRender(object):
         # TODO: other position layers.
         # TODO: ensure close all moviepy clips.
         return visual_clips
+    
     def __set_thumbnail_text_rclip(self, video_title, visual_clips):
         new_line_word_limit = 4
         words = video_title.split(" ")
@@ -257,7 +269,7 @@ class VideoRender(object):
         partition_index = math.floor(len(words_formatted) * .70)
         video_title_top = " ".join(words_formatted[:partition_index])
         video_title_bottom = " ".join(words_formatted[partition_index:])
-        thumbnail_dur_sec = 2
+        thumbnail_dur_sec = 1
         yellow = "#FFFF00"
         red = "#FF0000"
         lime_green = "#4be506"
