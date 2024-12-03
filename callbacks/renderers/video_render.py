@@ -38,18 +38,16 @@ class VideoRender(object):
         if not successful_content_download:
             logger.error("correlationId {0} failed to download media files for rendering".format(mediaEvent.LedgerID))
             return False
-        logger.info("Download status: " + str(successful_content_download))
         is_shortform = mediaEvent.DistributionFormat == 'ShortVideo'
         language = mediaEvent.Language
         
-        video_title = self.get_video_title(mediaEvent.FinalRenderSequences)
+        thumbnail_text = self.__get_thumbnail_text(mediaEvent.FinalRenderSequences)
         local_file_name = os.environ["SHARED_MEDIA_VOLUME_PATH"] + mediaEvent.ContentLookupKey + ".mp4"
+        # Creating as a separate process because moviepy exits the thread after writing compiled video.
         render_process = multiprocessing.Process(target=self.__perform_render, args=(
-            is_shortform, video_title, mediaEvent.FinalRenderSequences, language, "TrueVineMedia", local_file_name))
-        
+            is_shortform, thumbnail_text, mediaEvent.FinalRenderSequences, language, "TrueVineMedia", local_file_name))
         render_process.start()
         render_process.join()
-        logger.info("Finished render process")
         success = s3_wrapper.upload_file(local_file_name, mediaEvent.ContentLookupKey)
         self.__cleanup_local_files(mediaEvent.FinalRenderSequences)
         rendered_media_path = Path(local_file_name)
@@ -92,13 +90,11 @@ class VideoRender(object):
         status.append(s3_wrapper.download_file(content_lookup_key, localFilename))
 
     def __cleanup_local_files(self, final_render_sequences):
-        logger.info("called cleanup")
         for s in final_render_sequences:
             filename = os.environ["SHARED_MEDIA_VOLUME_PATH"] + s.ContentLookupKey
             file_path = Path(filename)
             if file_path.is_file():
                 os.remove(filename)
-            logger.info("CLEANUP: " + filename)
 
     def collect_render_clips_by_media_type(self, final_render_sequences, target_media_type, is_short_form, transcriptionLanguage = "en"):
         clips = list()
@@ -147,8 +143,8 @@ class VideoRender(object):
             seconds += c.duration
         return seconds
     
-    def get_video_title(self, final_render_sequences) -> str:
-        title = "A great video!"
+    def __get_thumbnail_text(self, final_render_sequences) -> str:
+        thumbnail_text = "A great video!"
         for s in final_render_sequences:
             if s.MediaType == 'Text' and s.PositionLayer == 'HiddenScript':
                 # no need to downlaod from s3; handled by download_all in previous call
@@ -157,12 +153,14 @@ class VideoRender(object):
                 with open(local_file_name, 'r') as file:
                     payload = file.read()
                 script = json.loads(payload)
-                title = script['videoTitle']
+                thumbnail_text = script['videoTitle']
+                if 'videoThumbnailText' in script:
+                    thumbnail_text = script['videoThumbnailText']
                 break
 
-        return title
+        return thumbnail_text
     
-    def __perform_render(self, is_short_form, video_title,
+    def __perform_render(self, is_short_form, thumbnail_text,
                        final_render_sequences,
                        language,
                        watermark_text,
@@ -176,10 +174,9 @@ class VideoRender(object):
         #text_clips = self.collect_render_clips_by_media_type(final_render_sequences, 'Text', language)
 
         visual_layer = self.__create_visual_layer(image_clips=image_clips, 
-                                                  video_clips=video_clips, video_title=video_title)
+                                                  video_clips=video_clips, video_title=thumbnail_text)
         audio_layer = self.__create_audio_layer(vocal_clips, music_clips, sfx_clips)
         seconds_narration = self.__get_duration_narration(audio_layer=audio_layer)
-        # TODO watermark
         subtitle_layer = self.__get_subtitle_clips(audio_clips=audio_layer, is_short_form=is_short_form)
         duration_watermark = 900
         if seconds_narration > 0:
