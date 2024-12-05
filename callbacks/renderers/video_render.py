@@ -48,7 +48,11 @@ class VideoRender(object):
             is_shortform, thumbnail_text, mediaEvent.FinalRenderSequences, language, "TrueVineMedia", local_file_name))
         render_process.start()
         render_process.join()
+        # TODO: Change this to wait-for-file
+        if not Path(local_file_name).is_file():
+            return False
         success = s3_wrapper.upload_file(local_file_name, mediaEvent.ContentLookupKey)
+        
         self.__cleanup_local_files(mediaEvent.FinalRenderSequences)
         rendered_media_path = Path(local_file_name)
         if rendered_media_path.is_file():
@@ -379,7 +383,8 @@ class VideoRender(object):
                 clip = TextClip(
                         text=word["text"],
                         font_size=150,
-                        stroke_width=5, 
+                        stroke_width=5,
+                        margin=(100, 100),
                         stroke_color="black", 
                         font="Arial Bold",
                         color="white")
