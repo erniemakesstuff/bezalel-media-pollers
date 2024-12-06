@@ -11,7 +11,7 @@ ENV TARGET_GENERATION="SET ME ON RUN EXEC"
 ENV SHARED_MEDIA_VOLUME_PATH="./tmp_media/"
 ENV GOOGLE_APPLICATION_CREDENTIALS="./localkey.json"
 ENV SIMPLE_IMAGE_GENERATOR_ENDPOINT="http://localhost:5051/image"
- 
+ENV VIDEO_RENDERER_ENDPOINT="http://localhost:5052/image"
 # Creates an app directory to hold your app’s source code
 WORKDIR /app
  
@@ -20,7 +20,6 @@ COPY . .
 RUN apt-get clean
 RUN apt-get update
 RUN apt update
-RUN apt install ffmpeg -y
 RUN apt-get install curl -y curl jq
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -30,11 +29,6 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 RUN pip install flask
-RUN pip install moviepy
-# This downloads cude and pytorch dependencies
-# in the size of Gigabytes...
-# This will timeout if your internet is too slow.
-RUN pip install whisper-timestamped
 EXPOSE 8080
 EXPOSE 80
 EXPOSE 443

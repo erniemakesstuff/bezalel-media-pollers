@@ -7,10 +7,7 @@ name = "pypi"
 boto3 = "*"
 google-cloud-aiplatform = "*"
 flask = "*"
-moviepy = "*"
-whisper-timestamped = "*"
 ez-setup = "*"
-ffmpeg = "*"
 imageio = "*"
 
 [dev-packages]
