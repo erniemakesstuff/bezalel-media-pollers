@@ -25,7 +25,7 @@ def upload_file(file_path_name, callbackId) -> bool:
     :return: True if file was uploaded, else False
     """
     path_file = Path(file_path_name)
-    if path_file.is_file():
+    if not path_file.is_file():
         logger.error("unable to upload to s3 missing local file: " + file_path_name)
         return False
     # Upload the file

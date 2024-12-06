@@ -15,7 +15,7 @@ import boto3
 from botocore.exceptions import ClientError
 import clients.gemini as gemini
 import s3_wrapper
-
+from callbacks.common_callback import request_and_wait
 logger = logging.getLogger(__name__)
 
 class RenderClip(object):
@@ -37,26 +37,29 @@ class VideoRender(object):
             return False
         is_shortform = mediaEvent.DistributionFormat == 'ShortVideo'
         language = mediaEvent.Language
-        
         thumbnail_text = self.__get_thumbnail_text(mediaEvent.FinalRenderSequences)
-        local_file_name = os.environ["SHARED_MEDIA_VOLUME_PATH"] + mediaEvent.ContentLookupKey + ".mp4"
+        watermark_text = "TrueVineMedia"
+        if len(mediaEvent.WatermarkText) != 0:
+            watermark_text = mediaEvent.WatermarkText
+        def get_obj_dict(obj):
+            return obj.__dict__
+        request_obj = {
+            "isShortForm": is_shortform,
+            "finalRenderSequences": json.dumps(mediaEvent.FinalRenderSequences, default=get_obj_dict),
+            "language": language,
+            "watermarkText": watermark_text,
+            "thumbnailText": thumbnail_text,
+            "contentLookupKey": mediaEvent.ContentLookupKey,
+        }
+        
         # Creating as a separate process because moviepy exits the thread after writing compiled video.
-        
-        #render_process = multiprocessing.Process(target=self.__perform_render, args=(
-        #    is_shortform, thumbnail_text, mediaEvent.FinalRenderSequences, language, "TrueVineMedia", local_file_name))
-        #render_process.start()
-        #render_process.join()
-        # TODO: Change this to wait-for-file
-        if not Path(local_file_name).is_file():
-            return False
-        success = s3_wrapper.upload_file(local_file_name, mediaEvent.ContentLookupKey)
-        
+        success = request_and_wait(url=os.environ["VIDEO_RENDERER_ENDPOINT"], max_wait_iterations=20,
+                                                   request_dict=request_obj, content_lookup_key=mediaEvent.ContentLookupKey)
+        local_file_name = os.environ["SHARED_MEDIA_VOLUME_PATH"] + mediaEvent.ContentLookupKey
         self.__cleanup_local_files(mediaEvent.FinalRenderSequences)
-        rendered_media_path = Path(local_file_name)
-        if rendered_media_path.is_file():
+        if Path(local_file_name).is_file():
             os.remove(local_file_name)
-        tmp_lookupkey = Path(mediaEvent.ContentLookupKey)
-        if tmp_lookupkey.is_file():
+        if Path(mediaEvent.ContentLookupKey).is_file():
             os.remove(mediaEvent.ContentLookupKey)
         return success
 

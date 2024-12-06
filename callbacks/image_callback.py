@@ -10,6 +10,7 @@ import time
 
 from botocore.exceptions import ClientError
 import s3_wrapper
+from callbacks.common_callback import request_and_wait
 logger = logging.getLogger(__name__)
 # Used for initial scripting.
 class ImageCallbackHandler(object):
@@ -28,33 +29,8 @@ class ImageCallbackHandler(object):
 
     def handle_image_generation(self, mediaEvent) -> bool:
         url = os.environ["SIMPLE_IMAGE_GENERATOR_ENDPOINT"]
-        requestObj = {
+        request_obj = {
             "promptInstruction": mediaEvent.PromptInstruction,
             "contentLookupKey": mediaEvent.ContentLookupKey,
         }
-        headers = {'Accept': '*/*',
-        'Content-Type': 'application/json' }
-        result = requests.post(url, json.dumps(requestObj), verify=False, timeout=180, headers=headers)
-        if not result.ok:
-            logger.error("failed to call generator: " + result.reason)
-            return False
-        
-        # TODO store s3 by callback id if integrating with third-party apis.
-        fileName = os.environ["SHARED_MEDIA_VOLUME_PATH"] + mediaEvent.ContentLookupKey
-
-        # wait for the file to be ready
-        max_wait_iterations = 5 # 5min
-        wait_iteration = 1
-        while not os.path.exists(fileName) and wait_iteration <= max_wait_iterations:
-            logger.info("Waiting for file to be created: " + fileName)
-            time.sleep(60)
-            wait_iteration += 1
-
-        if not os.path.exists(fileName):
-            logger.info("File was not generated; timeout: " + fileName)
-            return False
-        
-        success = s3_wrapper.upload_file(fileName, mediaEvent.ContentLookupKey)
-        os.remove(fileName)
-        logger.info("Generated conetent: " + fileName)
-        return success
+        return request_and_wait(url, 5, request_obj, mediaEvent.ContentLookupKey)
