@@ -11,7 +11,7 @@ ENV TARGET_GENERATION="SET ME ON RUN EXEC"
 ENV SHARED_MEDIA_VOLUME_PATH="./tmp_media/"
 ENV GOOGLE_APPLICATION_CREDENTIALS="./localkey.json"
 ENV SIMPLE_IMAGE_GENERATOR_ENDPOINT="http://localhost:5051/image"
-ENV VIDEO_RENDERER_ENDPOINT="http://localhost:5052/image"
+ENV VIDEO_RENDERER_ENDPOINT="http://localhost:5052/movie"
 # Creates an app directory to hold your app’s source code
 WORKDIR /app
  
