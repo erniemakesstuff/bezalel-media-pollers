@@ -34,7 +34,7 @@ def create_render(url, max_wait_iterations, request_dict, content_lookup_key) ->
             return False
         logger.info("file created: " + fileName)
         success = s3_wrapper.upload_file(fileName, content_lookup_key)
-        #if success and Path(fileName).is_file():
-        #    os.remove(fileName)
+        if success and Path(fileName).is_file():
+            os.remove(fileName)
         logger.info("Generated conetent: " + fileName)
         return success
