@@ -98,6 +98,9 @@ class VideoRender(object):
             # already exists, return
             status.append(True)
             return
+        else:
+            status.append(False)
+        
         status.append(s3_wrapper.download_file(content_lookup_key, localFilename))
 
     def __cleanup_local_files(self, final_render_sequences):
