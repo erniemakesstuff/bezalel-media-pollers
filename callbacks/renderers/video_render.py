@@ -76,8 +76,9 @@ class VideoRender(object):
             statuses = manager.list()
             for s in finalRenderSequences:
                 p = multiprocessing.Process(target=self.__download_media, args=(s.ContentLookupKey, statuses))
-                p.start()
                 jobs.append(p)
+                p.start()
+                
             for j in jobs:
                 j.join()
             
@@ -85,8 +86,10 @@ class VideoRender(object):
                 logger.error("no download statuses reported")
                 return False
             for s in statuses:
-                if not s:
-                    logger.error("failure status reported")
+                index_success_flag = 0
+                index_file = 1
+                if not s[index_success_flag]:
+                    logger.error("failure status reported: " + s[index_file])
                     # failure detected
                     return False
         return True
@@ -96,10 +99,10 @@ class VideoRender(object):
         path = Path(localFilename)
         if path.is_file():
             # already exists, return
-            status.append(True)
+            status.append([True, content_lookup_key])
             return
         else:
-            status.append(False)
+            status.append([False, content_lookup_key])
         
         status.append(s3_wrapper.download_file(content_lookup_key, localFilename))
 

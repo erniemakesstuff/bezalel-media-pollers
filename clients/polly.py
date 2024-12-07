@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 polly_client = session.client('polly')
 
 # https://docs.aws.amazon.com/polly/latest/dg/SynthesizeSpeechSamplePython.html
-def create_narration(content_lookup_key, speech_text, is_male) -> bool:
+def create_narration(content_lookup_key, speech_text, is_male, save_as_filename) -> bool:
     voice_id = 'Salli'
     if is_male:
         voice_id = 'Matthew'
@@ -23,9 +23,8 @@ def create_narration(content_lookup_key, speech_text, is_male) -> bool:
             OutputFormat='mp3', 
             Text = speech_text,
             Engine = 'standard')
-        filename = os.environ["SHARED_MEDIA_VOLUME_PATH"] + content_lookup_key
-        logger.info("created file: " + filename)
-        with open(filename, 'wb') as file:
+        logger.info("created file: " + save_as_filename)
+        with open(save_as_filename, 'wb') as file:
             file.write(response['AudioStream'].read())
     except ClientError as ex:
         logger.error("Couldn't get audio stream: " + str(ex))

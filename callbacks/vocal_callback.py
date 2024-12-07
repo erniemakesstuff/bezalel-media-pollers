@@ -31,13 +31,14 @@ class VocalCallbackHandler(object):
     
     def handle_vocal_generation(self, mediaEvent) -> bool:
         is_male_vocal = "male" in mediaEvent.SystemPromptInstruction.lower()
+        fileName = os.environ["SHARED_MEDIA_VOLUME_PATH"] + mediaEvent.ContentLookupKey
         success = polly.create_narration(content_lookup_key=mediaEvent.ContentLookupKey,
-                               speech_text=mediaEvent.PromptInstruction, is_male=is_male_vocal)
+                               speech_text=mediaEvent.PromptInstruction, is_male=is_male_vocal,
+                               save_as_filename=fileName)
         if not success:
             logger.info("correlationID: {0} failed to call AWS Polly".format(mediaEvent.LedgerID))
             return False
         
-        fileName = os.environ["SHARED_MEDIA_VOLUME_PATH"] + mediaEvent.ContentLookupKey
         success = s3_wrapper.upload_file(fileName, mediaEvent.ContentLookupKey)
         os.remove(fileName)
         return success
