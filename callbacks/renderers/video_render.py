@@ -3,6 +3,7 @@ import math
 import multiprocessing
 from pathlib import Path
 import random
+import time
 from types import SimpleNamespace
 import os
 import json
@@ -35,6 +36,10 @@ class VideoRender(object):
         if not successful_content_download:
             logger.error("correlationId {0} failed to download media files for rendering".format(mediaEvent.LedgerID))
             return False
+        # Sleep to avoid race-condition between files downloaded, and sidecar doesn't see the file.
+        # Files are already downloaded at this point, PRIOR to calling sidecar, but sidecar doesn't see it
+        # for whatever reason.
+        time.sleep(10)
         is_shortform = mediaEvent.DistributionFormat == 'ShortVideo'
         language = mediaEvent.Language
         thumbnail_text = self.__get_thumbnail_text(mediaEvent.FinalRenderSequences)
@@ -81,6 +86,7 @@ class VideoRender(object):
                 return False
             for s in statuses:
                 if not s:
+                    logger.error("failure status reported")
                     # failure detected
                     return False
         return True
