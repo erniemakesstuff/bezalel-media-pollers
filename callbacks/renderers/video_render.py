@@ -102,7 +102,7 @@ class VideoRender(object):
             status.append([True, content_lookup_key])
             return
         
-        status.append(s3_wrapper.download_file(content_lookup_key, localFilename))
+        status.append([s3_wrapper.download_file(content_lookup_key, localFilename), content_lookup_key])
 
     def __cleanup_local_files(self, final_render_sequences):
         for s in final_render_sequences:
