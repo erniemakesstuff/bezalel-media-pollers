@@ -14,25 +14,26 @@ def health_check():
 @app.route("/test")
 def testRender():
     finalRenderEvent = {
-    "LedgerID": "77fad92d-4d17-469c-aa39-62c3c55138e8",
-    "PromptInstruction": "OriginalPromptHash: 1de60ef338c2c6e4e88af012b82596d7 - MetaDescriptor: FinalRender - OPT_PUB: YoutubeProfile1",
-    "SystemPromptInstruction": "OriginalPromptHash: 1de60ef338c2c6e4e88af012b82596d7 - MetaDescriptor: FinalRender - OPT_PUB: YoutubeProfile1",
-    "MediaType": "Render",
-    "DistributionFormat": "ShortVideo",
-    "ContentLookupKey": "Render.77fad92d-4d17-469c-aa39-62c3c55138e8.955ad0ae-0bd5-48d2-baa2-4192c5581c7e.render",
-    "Niche": "Drama",
-    "Language": "EN",
-    "PromptHash": "d718125203c582da6a5e9c8d583b8bad",
-    "EventID": "EN.Render.Drama.d718125203c582da6a5e9c8d583b8bad",
-    "ParentEventID": "EN.Text.Drama.1de60ef338c2c6e4e88af012b82596d7",
-    "PositionLayer": "",
-    "RenderSequence": 0,
-    "FinalRenderSequences": "[{\"EventID\":\"EN.Text.Drama.1de60ef338c2c6e4e88af012b82596d7\",\"MediaType\":\"Text\",\"PositionLayer\":\"HiddenScript\",\"RenderSequence\":-1,\"ContentLookupKey\":\"Text.77fad92d-4d17-469c-aa39-62c3c55138e8.a2f17833-8380-4d73-bcb6-c55be96741eb.json\"},{\"EventID\":\"EN.Image.Drama.e62048f67541d40470613616044680fe\",\"MediaType\":\"Image\",\"PositionLayer\":\"Thumbnail\",\"RenderSequence\":0,\"ContentLookupKey\":\"Image.77fad92d-4d17-469c-aa39-62c3c55138e8.5ab21af0-ac38-417a-9cbd-14f619d2129e.png\"},{\"EventID\":\"EN.Music.Drama.d51dd44aed31246786008ac979766cbe\",\"MediaType\":\"Music\",\"PositionLayer\":\"BackgroundMusic\",\"RenderSequence\":0,\"ContentLookupKey\":\"m1.mp3\"},{\"EventID\":\"EN.Vocal.Drama.504b21a757e0ccd6aaa93fa20bc1af26\",\"MediaType\":\"Vocal\",\"PositionLayer\":\"Narrator\",\"RenderSequence\":0,\"ContentLookupKey\":\"Vocal.77fad92d-4d17-469c-aa39-62c3c55138e8.8627fe73-fe9d-4967-896b-a1fa08c82401.mp3\"},{\"EventID\":\"EN.Video.Drama.d51dd44aed31246786008ac979766cbe\",\"MediaType\":\"Video\",\"PositionLayer\":\"Fullscreen\",\"RenderSequence\":1,\"ContentLookupKey\":\"b30.mp4\"},{\"EventID\":\"EN.Vocal.Drama.9a785fadebd38db53593f5e42db636f2\",\"MediaType\":\"Vocal\",\"PositionLayer\":\"Narrator\",\"RenderSequence\":1,\"ContentLookupKey\":\"Vocal.77fad92d-4d17-469c-aa39-62c3c55138e8.fd3feb92-522e-4835-b100-b8403c4f4ad7.mp3\"},{\"EventID\":\"EN.Video.Drama.d51dd44aed31246786008ac979766cbe\",\"MediaType\":\"Video\",\"PositionLayer\":\"Fullscreen\",\"RenderSequence\":2,\"ContentLookupKey\":\"b17.mp4\"},{\"EventID\":\"EN.Vocal.Drama.ba0e372465a87f7c7ec1f2f2609ae9f9\",\"MediaType\":\"Vocal\",\"PositionLayer\":\"Narrator\",\"RenderSequence\":2,\"ContentLookupKey\":\"Vocal.77fad92d-4d17-469c-aa39-62c3c55138e8.6aebced5-3b6a-401c-b991-acc6bcdb1739.mp3\"},{\"EventID\":\"EN.Video.Drama.d51dd44aed31246786008ac979766cbe\",\"MediaType\":\"Video\",\"PositionLayer\":\"Fullscreen\",\"RenderSequence\":3,\"ContentLookupKey\":\"b29.mp4\"},{\"EventID\":\"EN.Video.Drama.d51dd44aed31246786008ac979766cbe\",\"MediaType\":\"Video\",\"PositionLayer\":\"Fullscreen\",\"RenderSequence\":4,\"ContentLookupKey\":\"b23.mp4\"},{\"EventID\":\"EN.Video.Drama.d51dd44aed31246786008ac979766cbe\",\"MediaType\":\"Video\",\"PositionLayer\":\"Fullscreen\",\"RenderSequence\":5,\"ContentLookupKey\":\"b18.mp4\"}]",
-    "WatermarkText": "TrueVineMedia",
-    "RestrictToPublisherID": "YoutubeProfile1",
-    "MetaMediaDescriptor": "FinalRender"}
+        "LedgerID": "6cdc973c-5b57-4a64-b1ce-41ead40f7c51",
+        "PromptInstruction": "OriginalPromptHash: 0096c1ab79e2f7fe9c4aa02ed5562981 - MetaDescriptor: FinalRender - OPT_PUB: YouTubeTest",
+        "SystemPromptInstruction": "OriginalPromptHash: 0096c1ab79e2f7fe9c4aa02ed5562981 - MetaDescriptor: FinalRender - OPT_PUB: YouTubeTest",
+        "MediaType": "Render",
+        "DistributionFormat": "ShortVideo",
+        "ContentLookupKey": "Render.6cdc973c-5b57-4a64-b1ce-41ead40f7c51.a3e5b5ed-2e64-4f5c-a6c0-11b7a16cd6d7.render",
+        "Niche": "Drama",
+        "Language": "EN",
+        "PromptHash": "c110ddc74a8ca6030ebdc8ca293c31c0",
+        "EventID": "EN.Render.Drama.c110ddc74a8ca6030ebdc8ca293c31c0",
+        "ParentEventID": "EN.Text.Drama.0096c1ab79e2f7fe9c4aa02ed5562981",
+        "PositionLayer": "",
+        "RenderSequence": 0,
+        "FinalRenderSequences": "[{\"EventID\":\"EN.Text.Drama.0096c1ab79e2f7fe9c4aa02ed5562981\",\"MediaType\":\"Text\",\"PositionLayer\":\"HiddenScript\",\"ContentLookupKey\":\"Text.6cdc973c-5b57-4a64-b1ce-41ead40f7c51.67325c98-ae5f-4bb9-99e7-0c018cf4b258.json\",\"RenderSequence\":-1},{\"EventID\":\"EN.Image.Drama.a94639be8367965abe9d105e86a181ec\",\"MediaType\":\"Image\",\"PositionLayer\":\"Thumbnail\",\"ContentLookupKey\":\"Image.6cdc973c-5b57-4a64-b1ce-41ead40f7c51.f9f9927a-1760-48f2-80ff-709ff9d6aa2e.png\",\"RenderSequence\":0},{\"EventID\":\"EN.Music.Drama.d51dd44aed31246786008ac979766cbe\",\"MediaType\":\"Music\",\"PositionLayer\":\"BackgroundMusic\",\"ContentLookupKey\":\"m6.mp3\",\"RenderSequence\":0},{\"EventID\":\"EN.Vocal.Drama.6e32fb95c91915df92962c7e0d8d923c\",\"MediaType\":\"Vocal\",\"PositionLayer\":\"Narrator\",\"ContentLookupKey\":\"Vocal.6cdc973c-5b57-4a64-b1ce-41ead40f7c51.9c0f1694-797f-4c4d-90ba-876c67f2eb0d.mp3\",\"RenderSequence\":0},{\"EventID\":\"EN.Video.Drama.d51dd44aed31246786008ac979766cbe\",\"MediaType\":\"Video\",\"PositionLayer\":\"Fullscreen\",\"ContentLookupKey\":\"b32.mp4\",\"RenderSequence\":1},{\"EventID\":\"EN.Vocal.Drama.f8b53ea5d276a8a744c7e6b22439710e\",\"MediaType\":\"Vocal\",\"PositionLayer\":\"Narrator\",\"ContentLookupKey\":\"Vocal.6cdc973c-5b57-4a64-b1ce-41ead40f7c51.ae437c1e-d15e-4759-a688-e91d1f3a39c3.mp3\",\"RenderSequence\":1},{\"EventID\":\"EN.Video.Drama.d51dd44aed31246786008ac979766cbe\",\"MediaType\":\"Video\",\"PositionLayer\":\"Fullscreen\",\"ContentLookupKey\":\"b52.mp4\",\"RenderSequence\":2},{\"EventID\":\"EN.Video.Drama.d51dd44aed31246786008ac979766cbe\",\"MediaType\":\"Video\",\"PositionLayer\":\"Fullscreen\",\"ContentLookupKey\":\"b54.mp4\",\"RenderSequence\":3},{\"EventID\":\"EN.Video.Drama.d51dd44aed31246786008ac979766cbe\",\"MediaType\":\"Video\",\"PositionLayer\":\"Fullscreen\",\"ContentLookupKey\":\"b10.mp4\",\"RenderSequence\":4},{\"EventID\":\"EN.Video.Drama.d51dd44aed31246786008ac979766cbe\",\"MediaType\":\"Video\",\"PositionLayer\":\"Fullscreen\",\"ContentLookupKey\":\"b21.mp4\",\"RenderSequence\":5}]",
+        "WatermarkText": "TrueVineMedia",
+        "RestrictToPublisherID": "YouTubeTest",
+        "MetaMediaDescriptor": "FinalRender"
+    }
     mediaEvent = queue_wrapper.to_media_event(json.dumps(finalRenderEvent))
 
     renderer = video_render.VideoRender()
-
+    logger.info("calling video render")
     return str(renderer.handle_final_render_video(mediaEvent=mediaEvent))

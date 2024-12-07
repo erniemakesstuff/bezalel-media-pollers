@@ -10,7 +10,7 @@ import time
 
 from botocore.exceptions import ClientError
 import s3_wrapper
-from callbacks.common_callback import request_and_wait
+from callbacks.common_callback import create_render
 logger = logging.getLogger(__name__)
 # Used for initial scripting.
 class ImageCallbackHandler(object):
@@ -33,4 +33,4 @@ class ImageCallbackHandler(object):
             "promptInstruction": mediaEvent.PromptInstruction,
             "contentLookupKey": mediaEvent.ContentLookupKey,
         }
-        return request_and_wait(url, 5, request_obj, mediaEvent.ContentLookupKey)
+        return create_render(url, 5, request_obj, mediaEvent.ContentLookupKey)

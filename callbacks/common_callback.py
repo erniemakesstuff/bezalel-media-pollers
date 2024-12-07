@@ -10,7 +10,7 @@ import time
 from botocore.exceptions import ClientError
 import s3_wrapper
 logger = logging.getLogger(__name__)
-def request_and_wait(url, max_wait_iterations, request_dict, content_lookup_key) -> bool:
+def create_render(url, max_wait_iterations, request_dict, content_lookup_key) -> bool:
         headers = {'Accept': '*/*',
         'Content-Type': 'application/json' }
         result = requests.post(url, json.dumps(request_dict), verify=False, timeout=180, headers=headers)

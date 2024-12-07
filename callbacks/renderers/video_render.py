@@ -16,7 +16,7 @@ import boto3
 from botocore.exceptions import ClientError
 import clients.gemini as gemini
 import s3_wrapper
-from callbacks.common_callback import request_and_wait
+from callbacks.common_callback import create_render
 logger = logging.getLogger(__name__)
 
 class RenderClip(object):
@@ -32,10 +32,13 @@ class VideoRender(object):
         return cls.instance
     
     def handle_final_render_video(self, mediaEvent) -> bool:
+        logger.debug("correlationId {0} downloading all content".format(mediaEvent.LedgerID))
         successful_content_download = self.__download_all_content(mediaEvent.FinalRenderSequences)
+        
         if not successful_content_download:
             logger.error("correlationId {0} failed to download media files for rendering".format(mediaEvent.LedgerID))
             return False
+        logger.debug("correlationId {0} all content downloaded".format(mediaEvent.LedgerID))
         # Sleep to avoid race-condition between files downloaded, and sidecar doesn't see the file.
         # Files are already downloaded at this point, PRIOR to calling sidecar, but sidecar doesn't see it
         # for whatever reason.
@@ -58,12 +61,9 @@ class VideoRender(object):
         }
         
         # Creating as a separate process because moviepy exits the thread after writing compiled video.
-        success = request_and_wait(url=os.environ["VIDEO_RENDERER_ENDPOINT"], max_wait_iterations=20,
+        success = create_render(url=os.environ["VIDEO_RENDERER_ENDPOINT"], max_wait_iterations=20,
                                                    request_dict=request_obj, content_lookup_key=mediaEvent.ContentLookupKey)
-        local_file_name = os.environ["SHARED_MEDIA_VOLUME_PATH"] + mediaEvent.ContentLookupKey
         self.__cleanup_local_files(mediaEvent.FinalRenderSequences)
-        if Path(local_file_name).is_file():
-            os.remove(local_file_name)
         if Path(mediaEvent.ContentLookupKey).is_file():
             os.remove(mediaEvent.ContentLookupKey)
         return success
@@ -78,7 +78,7 @@ class VideoRender(object):
                 p = multiprocessing.Process(target=self.__download_media, args=(s.ContentLookupKey, statuses))
                 jobs.append(p)
                 p.start()
-                
+
             for j in jobs:
                 j.join()
             
@@ -101,8 +101,6 @@ class VideoRender(object):
             # already exists, return
             status.append([True, content_lookup_key])
             return
-        else:
-            status.append([False, content_lookup_key])
         
         status.append(s3_wrapper.download_file(content_lookup_key, localFilename))
 
