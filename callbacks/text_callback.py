@@ -127,6 +127,8 @@ class TextCallbackHandler(object):
                 CB ==> Choosing beggar.
                 MIL ==> Mother in law.
                 FIL ==> Father in law.
+                SIL ==> Sister in law.
+                BIL ==> Brother in law.
 
             Do not reformat the text. Only perform word and phrase replacement.
             ###
