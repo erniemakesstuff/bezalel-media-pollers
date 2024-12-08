@@ -56,6 +56,7 @@ class TextCallbackHandler(object):
         evalInstruction = """
             You are an editor for a large media publisher. Your goal is to attract viewers through topical, relevant,
             dramatic, informative, entertaining, engaging, compelling, meaningful, significant, or sensationalist media publications.
+            You allow dramatic, sexual, dangerous, and potentially illegal content to be published if it is likely to attract viewers.
             Only content that is likely to attract viewer curiosity or interest should be approved by you.
 
             Evalute the contents of the given text according to your goals.
@@ -92,8 +93,9 @@ class TextCallbackHandler(object):
             ###
         """
 
-        sanitizeInstruction = """
+        sanitizeInstructionAcronyms = """
             You will perform word and phrase replacement on the given text by applying the following rules:
+
             Replace any acronyms with their expanded expression.
                 Example: 
                 IDK ==> I don't know.
@@ -120,6 +122,13 @@ class TextCallbackHandler(object):
                 STFU ==> Shut the fuck up.
                 OP ==> O P.
                 CB ==> Choosing beggar.
+
+            Do not reformat the text. Only perform word and phrase replacement.
+            ###
+        """
+
+        sanitizeInstructionPhrases = """
+            You will perform word and phrase replacement on the given text by applying the following rules:
             
             Replace any curse words or politically sensitive terms with a advertiser and brand friendly alternative.
                 Example:
@@ -146,5 +155,7 @@ class TextCallbackHandler(object):
             self.send_to_s3(contentLookupKey=mediaEvent.ContentLookupKey, text=evalText)
             return evalText
         time.sleep(15)
-        sanitizedText = self.geminiInst.call_model(sanitizeInstruction, mediaEvent.PromptInstruction)
-        return sanitizedText
+        sanitizedTextAcronyms = self.geminiInst.call_model(sanitizeInstructionAcronyms, mediaEvent.PromptInstruction)
+        time.sleep(15)
+        sanitizedPhrases =  self.geminiInst.call_model(sanitizedTextAcronyms, mediaEvent.PromptInstruction)
+        return sanitizedPhrases
