@@ -19,7 +19,7 @@ def poll(queue_url: str, callbackFunc, visibilityTimeout, waitTimeSeconds):
         AttributeNames=[
             'SentTimestamp'
         ],
-        MaxNumberOfMessages=1,
+        MaxNumberOfMessages=10,
         MessageAttributeNames=[
             'All'
         ],

@@ -16,6 +16,9 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+visibility_timeout_seconds = 600
+poll_delay_seconds = 30 # Polling interval
+max_workers = 1
 
 def start_serving():
     return health_service.app.run(port=5050, debug=False, host='0.0.0.0')
@@ -23,7 +26,7 @@ def start_serving():
 if __name__ == '__main__':
     poller = consumer.Consumer()
     multiprocessing.set_start_method('fork')
-    processConsumer = multiprocessing.Process(target=poller.start_poll)
+    processConsumer = multiprocessing.Process(target=poller.create_poll_workers, args=(max_workers, poll_delay_seconds, visibility_timeout_seconds))
     logger.info("start consumer")
     processConsumer.start() # Async pollers in background; no need to wait/join. Infinite.
     serviceListener = multiprocessing.Process(target=start_serving)

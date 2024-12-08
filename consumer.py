@@ -8,7 +8,7 @@ import sys
 import boto3
 
 from botocore.exceptions import ClientError
-
+import multiprocessing
 import queue_wrapper
 from callbacks.callback_factory import CallbackFactory
 from callbacks.text_callback import TextCallbackHandler
@@ -35,17 +35,22 @@ media_text_queue = "https://sqs.us-west-2.amazonaws.com/971422718801/media-text-
 media_render_queue = "https://sqs.us-west-2.amazonaws.com/971422718801/media-render-queue"
 media_image_queue = "https://sqs.us-west-2.amazonaws.com/971422718801/media-image-queue"
 media_vocal_queue = "https://sqs.us-west-2.amazonaws.com/971422718801/media-vocal-queue"
-visibility_timeout_seconds = 60 # TODO: Update this longer!
-poll_delay_seconds = 5 # Polling interval
-max_workers = 1 # TODO: probably not needed anymore: generators should use max container resources on single-op.
+
 class Consumer:
     def __new__(cls):
         logger.info("created new consumer instance: " + str(os.getpid()))
         if not hasattr(cls, 'instance'):
             cls.instance = super(Consumer, cls).__new__(cls)
         return cls.instance
-     
-    def start_poll(self):
+    
+    def create_poll_workers(self, max_workers = 1, poll_delay_seconds = 5, visibility_timeout_seconds = 60):
+        i = 0
+        while i < max_workers:
+            p = multiprocessing.Process(target=self.start_poll, args=(poll_delay_seconds, visibility_timeout_seconds))
+            p.start()
+            i += 1
+
+    def start_poll(self, poll_delay_seconds = 5, visibility_timeout_seconds = 60):
         # Local testing convenience
         if targetGenerator == 'local':
             while True:
