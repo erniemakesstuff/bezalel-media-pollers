@@ -157,5 +157,5 @@ class TextCallbackHandler(object):
         time.sleep(15)
         sanitizedTextAcronyms = self.geminiInst.call_model(sanitizeInstructionAcronyms, mediaEvent.PromptInstruction)
         time.sleep(15)
-        sanitizedPhrases =  self.geminiInst.call_model(sanitizedTextAcronyms, mediaEvent.PromptInstruction)
+        sanitizedPhrases =  self.geminiInst.call_model(sanitizeInstructionPhrases, sanitizedTextAcronyms)
         return sanitizedPhrases
