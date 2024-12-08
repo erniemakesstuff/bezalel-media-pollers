@@ -72,6 +72,7 @@ class VideoRender(object):
     
     def __download_all_content(self, finalRenderSequences) -> bool:
         jobs = []
+        process_timeout_sec = 180
         with multiprocessing.Manager() as manager:
             statuses = manager.list()
             for s in finalRenderSequences:
@@ -80,10 +81,10 @@ class VideoRender(object):
                 p.start()
 
             for j in jobs:
-                j.join()
+                j.join(process_timeout_sec)
             
-            if len(statuses) == 0:
-                logger.error("no download statuses reported")
+            if len(statuses) == 0 or len(statuses) != len(finalRenderSequences):
+                logger.error("missing download statuses")
                 return False
             for s in statuses:
                 index_success_flag = 0
@@ -101,8 +102,8 @@ class VideoRender(object):
             # already exists, return
             status.append([True, content_lookup_key])
             return
-        
-        status.append([s3_wrapper.download_file(content_lookup_key, localFilename), content_lookup_key])
+        success = s3_wrapper.download_file(content_lookup_key, localFilename)
+        status.append([success, content_lookup_key])
 
     def __cleanup_local_files(self, final_render_sequences):
         for s in final_render_sequences:
