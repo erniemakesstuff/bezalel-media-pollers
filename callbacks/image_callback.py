@@ -24,7 +24,7 @@ class ImageCallbackHandler(object):
     def handle_image_generation(self, mediaEvent) -> bool:
         url = os.environ["SIMPLE_IMAGE_GENERATOR_ENDPOINT"]
         # Append random to deconflict file-writes to shared media volume across several processes.
-        filepath_prefix = os.environ["SHARED_MEDIA_VOLUME_PATH"] + random.randint(0, 9999)
+        filepath_prefix = os.environ["SHARED_MEDIA_VOLUME_PATH"] + str(random.randint(0, 9999))
         request_obj = {
             "promptInstruction": mediaEvent.PromptInstruction,
             "contentLookupKey": mediaEvent.ContentLookupKey,

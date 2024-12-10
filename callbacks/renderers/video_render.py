@@ -44,7 +44,7 @@ class VideoRender(object):
         def get_obj_dict(obj):
             return obj.__dict__
         # Append random to deconflict file-writes to shared media volume across several processes.
-        filepath_prefix = os.environ["SHARED_MEDIA_VOLUME_PATH"] + random.randint(0, 9999)
+        filepath_prefix = os.environ["SHARED_MEDIA_VOLUME_PATH"] + str(random.randint(0, 9999))
         request_obj = {
             "isShortForm": is_shortform,
             "finalRenderSequences": json.dumps(mediaEvent.FinalRenderSequences, default=get_obj_dict),

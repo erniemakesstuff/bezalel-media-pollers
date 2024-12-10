@@ -17,7 +17,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 visibility_timeout_seconds = 600
-poll_delay_seconds = 30 # Polling interval
+poll_delay_seconds = 20 # Polling interval
 max_workers = 1
 
 def start_serving():
