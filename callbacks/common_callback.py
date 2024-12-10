@@ -1,16 +1,13 @@
 from pathlib import Path
-from types import SimpleNamespace
 import os
 import json
 import logging
-from urllib.parse import urlencode
 import requests
 import time
 
-from botocore.exceptions import ClientError
 import s3_wrapper
 logger = logging.getLogger(__name__)
-def create_render(url, max_wait_iterations, request_dict, content_lookup_key) -> bool:
+def create_render(url, max_wait_iterations, request_dict, filepath_prefix, content_lookup_key) -> bool:
         headers = {'Accept': '*/*',
         'Content-Type': 'application/json' }
         result = requests.post(url, json.dumps(request_dict), verify=False, timeout=180, headers=headers)
@@ -19,7 +16,7 @@ def create_render(url, max_wait_iterations, request_dict, content_lookup_key) ->
             return False
         
         # TODO store s3 by callback id if integrating with third-party apis.
-        fileName = os.environ["SHARED_MEDIA_VOLUME_PATH"] + content_lookup_key
+        fileName = filepath_prefix + content_lookup_key
 
         # wait for the file to be ready
         max_wait_iterations = max_wait_iterations
@@ -36,5 +33,5 @@ def create_render(url, max_wait_iterations, request_dict, content_lookup_key) ->
         success = s3_wrapper.upload_file(fileName, content_lookup_key)
         if success and Path(fileName).is_file():
             os.remove(fileName)
-        logger.info("Generated conetent: " + fileName)
+        logger.info("Generated and uploaded conetent: " + fileName)
         return success

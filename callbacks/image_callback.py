@@ -1,14 +1,8 @@
 from types import SimpleNamespace
 import os
-import json
 import logging
-import sys
-from urllib.parse import urlencode
-import requests
-import boto3
-import time
+import random
 
-from botocore.exceptions import ClientError
 import s3_wrapper
 from callbacks.common_callback import create_render
 logger = logging.getLogger(__name__)
@@ -29,8 +23,11 @@ class ImageCallbackHandler(object):
 
     def handle_image_generation(self, mediaEvent) -> bool:
         url = os.environ["SIMPLE_IMAGE_GENERATOR_ENDPOINT"]
+        # Append random to deconflict file-writes to shared media volume across several processes.
+        filepath_prefix = os.environ["SHARED_MEDIA_VOLUME_PATH"] + random.randint(0, 9999)
         request_obj = {
             "promptInstruction": mediaEvent.PromptInstruction,
             "contentLookupKey": mediaEvent.ContentLookupKey,
+            "filepathPrefix": filepath_prefix
         }
-        return create_render(url, 5, request_obj, mediaEvent.ContentLookupKey)
+        return create_render(url, 5, request_obj, filepath_prefix, mediaEvent.ContentLookupKey)

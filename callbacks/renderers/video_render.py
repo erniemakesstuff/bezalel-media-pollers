@@ -1,20 +1,12 @@
-import copy
-import math
 import multiprocessing
 from pathlib import Path
 import random
 import time
-from types import SimpleNamespace
 import os
 import json
 import logging
-import sys
-from typing import List
 import s3_wrapper
-import boto3
 
-from botocore.exceptions import ClientError
-import clients.gemini as gemini
 import s3_wrapper
 from callbacks.common_callback import create_render
 logger = logging.getLogger(__name__)
@@ -51,6 +43,8 @@ class VideoRender(object):
             watermark_text = mediaEvent.WatermarkText
         def get_obj_dict(obj):
             return obj.__dict__
+        # Append random to deconflict file-writes to shared media volume across several processes.
+        filepath_prefix = os.environ["SHARED_MEDIA_VOLUME_PATH"] + random.randint(0, 9999)
         request_obj = {
             "isShortForm": is_shortform,
             "finalRenderSequences": json.dumps(mediaEvent.FinalRenderSequences, default=get_obj_dict),
@@ -58,11 +52,13 @@ class VideoRender(object):
             "watermarkText": watermark_text,
             "thumbnailText": thumbnail_text,
             "contentLookupKey": mediaEvent.ContentLookupKey,
+            "filepathPrefix": filepath_prefix
         }
         
         # Creating as a separate process because moviepy exits the thread after writing compiled video.
         success = create_render(url=os.environ["VIDEO_RENDERER_ENDPOINT"], max_wait_iterations=20,
-                                                   request_dict=request_obj, content_lookup_key=mediaEvent.ContentLookupKey)
+                                request_dict=request_obj,filepath_prefix=filepath_prefix,
+                                content_lookup_key=mediaEvent.ContentLookupKey)
         self.__cleanup_local_files(mediaEvent.FinalRenderSequences)
         if Path(mediaEvent.ContentLookupKey).is_file():
             os.remove(mediaEvent.ContentLookupKey)
