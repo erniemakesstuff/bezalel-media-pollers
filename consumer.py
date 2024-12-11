@@ -93,8 +93,6 @@ class Consumer:
         else:
             raise Exception("invalid targetGenerator: " + targetGenerator)
         logger.info("Starting polling...")
-        # TODO: only one poller should be active! Remove duplicate pollers when
-        # containerizing. Added only for local-dev convenience.
         while True:
             try:
                 queue_wrapper.poll(work_queue, callback_handler.handle_message,

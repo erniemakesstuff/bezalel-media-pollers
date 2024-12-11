@@ -13,7 +13,7 @@ session = boto3.Session(
 )
 logger = logging.getLogger(__name__)
 s3_client = session.client('s3')
-# TODO make this env set.
+
 bucket = "truevine-media-storage"
 
 #S3 Docs: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/s3-uploading-files.html

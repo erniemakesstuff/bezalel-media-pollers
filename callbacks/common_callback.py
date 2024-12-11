@@ -15,7 +15,6 @@ def create_render(url, max_wait_iterations, request_dict, filepath_prefix, conte
             logger.error("failed to call generator: " + result.reason)
             return False
         
-        # TODO store s3 by callback id if integrating with third-party apis.
         fileName = filepath_prefix + content_lookup_key
 
         # wait for the file to be ready

@@ -31,7 +31,6 @@ class TextCallbackHandler(object):
     
     def send_to_s3(self, contentLookupKey, text) -> bool:
         text = text.replace('```json', '').replace('```', '')
-        # TODO store s3 by callback id.
         fileName = os.environ["SHARED_MEDIA_VOLUME_PATH"] + contentLookupKey + ".txt"
         with open(fileName, "w") as text_file:
             text_file.write(text)

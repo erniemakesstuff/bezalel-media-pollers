@@ -48,6 +48,7 @@ class GeminiClient(object):
             )
         for c in response.candidates:
             if c.finish_reason == "SAFETY":
+                logger.info("Gemini responded with safety flag.")
                 return "[EDITOR_FORBIDDEN] LLM safety flagged content."
         return response.text
     

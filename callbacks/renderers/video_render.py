@@ -100,6 +100,7 @@ class VideoRender(object):
             status.append([True, content_lookup_key])
             return
         success = s3_wrapper.download_file(content_lookup_key, localFilename)
+        logger.info("attempting file download: " + localFilename)
         status.append([success, content_lookup_key])
 
     def __cleanup_local_files(self, final_render_sequences, filepath_prefix):
