@@ -46,6 +46,9 @@ class GeminiClient(object):
         response = self.model.generate_content(
             prompt_text
             )
+        for c in response.candidates:
+            if c.finish_reason == "SAFETY":
+                return "[EDITOR_FORBIDDEN] LLM safety flagged content."
         return response.text
     
     def call_model_json_out(self, system_instruction, prompt_text) -> str:

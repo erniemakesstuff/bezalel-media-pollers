@@ -25,7 +25,9 @@ class VideoRender(object):
     
     def handle_final_render_video(self, mediaEvent) -> bool:
         logger.debug("correlationId {0} downloading all content".format(mediaEvent.LedgerID))
-        successful_content_download = self.__download_all_content(mediaEvent.FinalRenderSequences)
+        # Append random to deconflict file-writes to shared media volume across several processes.
+        filepath_prefix = os.environ["SHARED_MEDIA_VOLUME_PATH"] + str(random.randint(0, 9999))
+        successful_content_download = self.__download_all_content(mediaEvent.FinalRenderSequences, filepath_prefix)
         
         if not successful_content_download:
             logger.error("correlationId {0} failed to download media files for rendering".format(mediaEvent.LedgerID))
@@ -37,14 +39,13 @@ class VideoRender(object):
         time.sleep(10)
         is_shortform = mediaEvent.DistributionFormat == 'ShortVideo'
         language = mediaEvent.Language
-        thumbnail_text = self.__get_thumbnail_text(mediaEvent.FinalRenderSequences)
+        thumbnail_text = self.__get_thumbnail_text(mediaEvent.FinalRenderSequences, filepath_prefix)
         watermark_text = "TrueVineMedia"
         if len(mediaEvent.WatermarkText) != 0:
             watermark_text = mediaEvent.WatermarkText
         def get_obj_dict(obj):
             return obj.__dict__
-        # Append random to deconflict file-writes to shared media volume across several processes.
-        filepath_prefix = os.environ["SHARED_MEDIA_VOLUME_PATH"] + str(random.randint(0, 9999))
+        
         request_obj = {
             "isShortForm": is_shortform,
             "finalRenderSequences": json.dumps(mediaEvent.FinalRenderSequences, default=get_obj_dict),
@@ -59,20 +60,20 @@ class VideoRender(object):
         success = create_render(url=os.environ["VIDEO_RENDERER_ENDPOINT"], max_wait_iterations=20,
                                 request_dict=request_obj,filepath_prefix=filepath_prefix,
                                 content_lookup_key=mediaEvent.ContentLookupKey)
-        self.__cleanup_local_files(mediaEvent.FinalRenderSequences)
+        self.__cleanup_local_files(mediaEvent.FinalRenderSequences, filepath_prefix)
         if Path(mediaEvent.ContentLookupKey).is_file():
             os.remove(mediaEvent.ContentLookupKey)
         return success
 
         
     
-    def __download_all_content(self, finalRenderSequences) -> bool:
+    def __download_all_content(self, finalRenderSequences, filepath_prefix) -> bool:
         jobs = []
         process_timeout_sec = 180
         with multiprocessing.Manager() as manager:
             statuses = manager.list()
             for s in finalRenderSequences:
-                p = multiprocessing.Process(target=self.__download_media, args=(s.ContentLookupKey, statuses))
+                p = multiprocessing.Process(target=self.__download_media, args=(s.ContentLookupKey, statuses, filepath_prefix))
                 jobs.append(p)
                 p.start()
 
@@ -91,8 +92,8 @@ class VideoRender(object):
                     return False
         return True
 
-    def __download_media(self, content_lookup_key, status):
-        localFilename = os.environ["SHARED_MEDIA_VOLUME_PATH"] + content_lookup_key
+    def __download_media(self, content_lookup_key, status, filepath_prefix):
+        localFilename = filepath_prefix + content_lookup_key
         path = Path(localFilename)
         if path.is_file():
             # already exists, return
@@ -101,21 +102,21 @@ class VideoRender(object):
         success = s3_wrapper.download_file(content_lookup_key, localFilename)
         status.append([success, content_lookup_key])
 
-    def __cleanup_local_files(self, final_render_sequences):
+    def __cleanup_local_files(self, final_render_sequences, filepath_prefix):
         for s in final_render_sequences:
-            filename = os.environ["SHARED_MEDIA_VOLUME_PATH"] + s.ContentLookupKey
+            filename = filepath_prefix + s.ContentLookupKey
             file_path = Path(filename)
             if file_path.is_file():
                 os.remove(filename)
 
     
-    def __get_thumbnail_text(self, final_render_sequences) -> str:
+    def __get_thumbnail_text(self, final_render_sequences, filepath_prefix) -> str:
         thumbnail_text = "A great video!"
         for s in final_render_sequences:
             if s.MediaType == 'Text' and s.PositionLayer == 'HiddenScript':
                 # no need to downlaod from s3; handled by download_all in previous call
                 # defer cleanup
-                local_file_name = os.environ["SHARED_MEDIA_VOLUME_PATH"] + s.ContentLookupKey
+                local_file_name = filepath_prefix + s.ContentLookupKey
                 with open(local_file_name, 'r') as file:
                     payload = file.read()
                 script = json.loads(payload)
