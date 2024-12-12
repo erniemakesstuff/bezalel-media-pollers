@@ -59,6 +59,7 @@ class GeminiClient(object):
     def sanitize_json(self, respText, retryCount) ->str:
         maxRetries = 3
         if retryCount > maxRetries:
+            logger.error("failed to sanitize json text")
             return Exception("max retries exceeded for sanitizing json")
         isValidJson = self.parse(respText)
         if isValidJson:
