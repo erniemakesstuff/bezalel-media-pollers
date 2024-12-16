@@ -42,7 +42,7 @@ class VideoRender(object):
         is_shortform = mediaEvent.DistributionFormat == 'ShortVideo'
         language = mediaEvent.Language
         thumbnail_text = self.__get_thumbnail_text(mediaEvent.FinalRenderSequences, filepath_prefix)
-        watermark_text = "Kherem.com"
+        watermark_text = ""
         if len(mediaEvent.WatermarkText) != 0:
             watermark_text = mediaEvent.WatermarkText
         def get_obj_dict(obj):
