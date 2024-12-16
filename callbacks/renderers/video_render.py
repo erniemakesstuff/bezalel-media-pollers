@@ -30,8 +30,10 @@ class VideoRender(object):
         successful_content_download = self.__download_all_content(mediaEvent.FinalRenderSequences, filepath_prefix)
         
         if not successful_content_download:
+            self.__cleanup_local_files(mediaEvent.FinalRenderSequences, filepath_prefix)
             logger.error("correlationId {0} failed to download media files for rendering".format(mediaEvent.LedgerID))
             return False
+        
         logger.debug("correlationId {0} all content downloaded".format(mediaEvent.LedgerID))
         # Sleep to avoid race-condition between files downloaded, and sidecar doesn't see the file.
         # Files are already downloaded at this point, PRIOR to calling sidecar, but sidecar doesn't see it
@@ -40,7 +42,7 @@ class VideoRender(object):
         is_shortform = mediaEvent.DistributionFormat == 'ShortVideo'
         language = mediaEvent.Language
         thumbnail_text = self.__get_thumbnail_text(mediaEvent.FinalRenderSequences, filepath_prefix)
-        watermark_text = "TrueVineMedia"
+        watermark_text = "Kherem.com"
         if len(mediaEvent.WatermarkText) != 0:
             watermark_text = mediaEvent.WatermarkText
         def get_obj_dict(obj):
@@ -80,7 +82,7 @@ class VideoRender(object):
             for j in jobs:
                 j.join(process_timeout_sec)
             
-            if len(statuses) == 0 or len(statuses) != len(finalRenderSequences):
+            if len(statuses) == 0 or len(statuses) != len(jobs):
                 logger.error("missing download statuses")
                 return False
             for s in statuses:
@@ -99,8 +101,9 @@ class VideoRender(object):
             # already exists, return
             status.append([True, content_lookup_key])
             return
-        success = s3_wrapper.download_file(content_lookup_key, localFilename)
         logger.info("attempting file download: " + localFilename)
+        success = s3_wrapper.download_file(content_lookup_key, localFilename)
+        logger.info(localFilename + " status: " + str(success))
         status.append([success, content_lookup_key])
 
     def __cleanup_local_files(self, final_render_sequences, filepath_prefix):
