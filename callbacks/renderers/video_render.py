@@ -71,7 +71,7 @@ class VideoRender(object):
     
     def __download_all_content(self, finalRenderSequences, filepath_prefix) -> bool:
         jobs = []
-        process_timeout_sec = 180
+        process_timeout_sec = 600
         with multiprocessing.Manager() as manager:
             statuses = manager.list()
             for s in finalRenderSequences:
@@ -83,7 +83,7 @@ class VideoRender(object):
                 j.join(process_timeout_sec)
             
             if len(statuses) == 0 or len(statuses) != len(jobs):
-                logger.error("missing download statuses")
+                logger.error("missing download statuses. Expected: " + str(len(jobs)) + ", Actual: " + str(len(statuses)))
                 return False
             for s in statuses:
                 index_success_flag = 0
