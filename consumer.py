@@ -1,3 +1,4 @@
+import time
 import traceback
 from types import SimpleNamespace
 import os
@@ -45,10 +46,16 @@ class Consumer:
     
     def create_poll_workers(self, max_workers = 1, poll_delay_seconds = 5, visibility_timeout_seconds = 60):
         i = 0
+        workers = []
         while i < max_workers:
             p = multiprocessing.Process(target=self.start_poll, args=(poll_delay_seconds, visibility_timeout_seconds))
             p.start()
+            workers.append(p)
             i += 1
+            time.sleep(3) # stagger workers so they don't poll the same data.
+
+        for w in workers:
+            w.join()
 
     def start_poll(self, poll_delay_seconds = 5, visibility_timeout_seconds = 60):
         # Local testing convenience
