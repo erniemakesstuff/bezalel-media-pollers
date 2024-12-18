@@ -1,7 +1,8 @@
 import json
 import logging
 import os
-from flask import Flask
+from flask import Flask, request
+from clients.rate_limiter import DynamoDBRateLimiter
 import queue_wrapper
 from callbacks.renderers import video_render
 app = Flask(__name__)
@@ -10,6 +11,21 @@ logger = logging.getLogger(__name__)
 def health_check():
     return "Healthy"
 
+@app.route("/ratelimit", methods=['POST'])
+def rate_limiter():
+    data = request.get_json()
+    api_name = data.get('apiName')
+    max_requests = data.get('maxRequestsPerMin')
+    if api_name == None or len(api_name) == 0:
+        return "empty api name", 400
+    if max_requests == None or max_requests <= 0:
+        return "invalid max requests", 400
+    
+    is_allowed = DynamoDBRateLimiter().is_allowed(api_name=api_name, max_requests_minute=max_requests)
+    if is_allowed:
+        return api_name + " allowed", 200
+    else:
+        return api_name + " rate limited", 429
 
 @app.route("/test")
 def testRender():

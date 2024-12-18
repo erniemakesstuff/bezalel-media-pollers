@@ -2,7 +2,7 @@ import multiprocessing
 import logging
 import os
 import sys
-import health_service
+import controller
 import consumer
 
 file_handler = logging.FileHandler(filename='tmp.log')
@@ -21,7 +21,7 @@ poll_delay_seconds = 20 # Polling interval
 max_workers = 1
 
 def start_serving():
-    return health_service.app.run(port=5050, debug=False, host='0.0.0.0')
+    return controller.app.run(port=5050, debug=False, host='0.0.0.0')
 
 if __name__ == '__main__':
     poller = consumer.Consumer()
