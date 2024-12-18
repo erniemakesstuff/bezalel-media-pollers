@@ -1,13 +1,4 @@
-from types import SimpleNamespace
-import os
-import json
 import logging
-import sys
-from typing import List
-
-import boto3
-
-from botocore.exceptions import ClientError
 import clients.gemini as gemini
 from callbacks.renderers import blog_render, video_render
 import s3_wrapper

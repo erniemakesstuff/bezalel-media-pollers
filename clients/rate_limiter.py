@@ -4,10 +4,10 @@ import boto3
 from datetime import datetime, timezone
 logger = logging.getLogger(__name__)
 
-class DynamoDBRateLimiter:
+class RateLimiter:
     def __new__(cls):
         if not hasattr(cls, 'instance'):
-            cls.instance = super(DynamoDBRateLimiter, cls).__new__(cls)
+            cls.instance = super(RateLimiter, cls).__new__(cls)
         return cls.instance
     
     def __init__(self):

@@ -5,6 +5,7 @@ import time
 import os
 import json
 import logging
+from clients.rate_limiter import RateLimiter
 import s3_wrapper
 
 import s3_wrapper
@@ -25,6 +26,10 @@ class VideoRender(object):
     
     def handle_final_render_video(self, mediaEvent) -> bool:
         logger.debug("correlationId {0} downloading all content".format(mediaEvent.LedgerID))
+
+        if not RateLimiter().is_allowed("video render", 1):
+            logger.info("WARN rate limit breached for video render")
+            return False
         # Append random to deconflict file-writes to shared media volume across several processes.
         filepath_prefix = os.environ["SHARED_MEDIA_VOLUME_PATH"] + str(random.randint(0, 9999))
         successful_content_download = self.__download_all_content(mediaEvent.FinalRenderSequences, filepath_prefix)

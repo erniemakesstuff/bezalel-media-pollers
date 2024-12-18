@@ -1,16 +1,13 @@
-import time
 from types import SimpleNamespace
 import os
-import json
 import logging
-import sys
-
-import boto3
 
 from botocore.exceptions import ClientError
 import clients.gemini as gemini
+from clients.rate_limiter import RateLimiter
 import s3_wrapper
 logger = logging.getLogger(__name__)
+max_gemini_requests = 980
 # Used for initial scripting.
 class TextCallbackHandler(object):
     geminiInst = None
@@ -41,10 +38,15 @@ class TextCallbackHandler(object):
     def handle_script_text(self, mediaEvent) -> bool:
         promptText = mediaEvent.PromptInstruction
         promptText = self.filter_text(mediaEvent=mediaEvent)
+        if len(promptText) == 0:
+            logger.info("WARN empty promptText from filter_text, possible rate limiting")
+            return False
         if self.editor_forbidden in promptText:
             logger.info("Content forbidden by editor: " + mediaEvent.ContentLookupKey + " decision: " + promptText)
             return True # Noop
-        
+        if not RateLimiter().is_allowed("gemini", max_gemini_requests):
+            logger.info("WARN rate limit breached for gemini")
+            return False
         resultText = self.geminiInst.call_model_json_out(mediaEvent.SystemPromptInstruction, prompt_text=promptText)
         if not resultText:
             return False
@@ -150,18 +152,26 @@ class TextCallbackHandler(object):
             Do not reformat the text. Only perform word and phrase replacement.
             ###
         """
-        time.sleep(15)
+        if not RateLimiter().is_allowed("gemini", max_gemini_requests):
+            logger.info("WARN rate limit breached for gemini")
+            return ""
         evalText = self.geminiInst.call_model(evalJailbreak, mediaEvent.PromptInstruction)
         if self.editor_forbidden in evalText:
             self.send_to_s3(contentLookupKey=mediaEvent.ContentLookupKey, text=evalText)
             return evalText
-        time.sleep(15)
+        if not RateLimiter().is_allowed("gemini", max_gemini_requests):
+            logger.info("WARN rate limit breached for gemini")
+            return ""
         evalText = self.geminiInst.call_model(evalInstruction, mediaEvent.PromptInstruction)
         if self.editor_forbidden in evalText:
             self.send_to_s3(contentLookupKey=mediaEvent.ContentLookupKey, text=evalText)
             return evalText
-        time.sleep(15)
+        if not RateLimiter().is_allowed("gemini", max_gemini_requests):
+            logger.info("WARN rate limit breached for gemini")
+            return ""
         sanitizedTextAcronyms = self.geminiInst.call_model(sanitizeInstructionAcronyms, mediaEvent.PromptInstruction)
-        time.sleep(15)
+        if not RateLimiter().is_allowed("gemini", max_gemini_requests):
+            logger.info("WARN rate limit breached for gemini")
+            return ""
         sanitizedPhrases =  self.geminiInst.call_model(sanitizeInstructionPhrases, sanitizedTextAcronyms)
         return sanitizedPhrases

@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from flask import Flask, request
-from clients.rate_limiter import DynamoDBRateLimiter
+from clients.rate_limiter import RateLimiter
 import queue_wrapper
 from callbacks.renderers import video_render
 app = Flask(__name__)
@@ -21,7 +21,7 @@ def rate_limiter():
     if max_requests == None or max_requests <= 0:
         return "invalid max requests", 400
     
-    is_allowed = DynamoDBRateLimiter().is_allowed(api_name=api_name, max_requests_minute=max_requests)
+    is_allowed = RateLimiter().is_allowed(api_name=api_name, max_requests_minute=max_requests)
     if is_allowed:
         return api_name + " allowed", 200
     else:

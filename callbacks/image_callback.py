@@ -1,8 +1,8 @@
-from types import SimpleNamespace
 import os
 import logging
 import random
 
+from clients.rate_limiter import RateLimiter
 import s3_wrapper
 from callbacks.common_callback import create_render
 logger = logging.getLogger(__name__)
@@ -30,4 +30,7 @@ class ImageCallbackHandler(object):
             "contentLookupKey": mediaEvent.ContentLookupKey,
             "filepathPrefix": filepath_prefix
         }
+        if not RateLimiter().is_allowed("lexica", 1):
+            logger.info("WARN rate limit breached for lexica")
+            return False
         return create_render(url, 5, request_obj, filepath_prefix, mediaEvent.ContentLookupKey)
