@@ -1,3 +1,4 @@
+import json
 from types import SimpleNamespace
 import os
 import logging
@@ -47,12 +48,25 @@ class TextCallbackHandler(object):
         if not RateLimiter().is_allowed("gemini", max_gemini_requests):
             logger.info("WARN rate limit breached for gemini")
             return False
-        resultText = self.geminiInst.call_model_json_out(mediaEvent.SystemPromptInstruction, prompt_text=promptText)
-        if not resultText:
+        resultScript = self.geminiInst.call_model_json_out(mediaEvent.SystemPromptInstruction, prompt_text=promptText)
+        if not resultScript:
             return False
         
-        return self.send_to_s3(contentLookupKey=mediaEvent.ContentLookupKey, text=resultText)
+        if mediaEvent.DistributionFormat.lower() == "tinyblog":
+            resultScript = self.minify_blog_text(resultScript)
 
+        return self.send_to_s3(contentLookupKey=mediaEvent.ContentLookupKey, text=resultScript)
+
+    def minify_blog_text(self, payload) -> str:
+        script = json.loads(payload)
+        blogText = script['blogText']
+        if len(blogText) > 280:
+            logger.info("blog text too large, attempting to minify")
+            resultPayload = self.geminiInst.call_model_json_out("Re-write the json:blogText contents to be less than 280 characters long.",
+                                                             prompt_text=payload)
+            return resultPayload
+        
+        return payload
     def filter_text(self, mediaEvent) -> str:
         evalInstruction = """
             You are an editor for a large media publisher. Your goal is to attract viewers through topical, relevant,
