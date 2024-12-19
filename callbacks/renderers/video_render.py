@@ -32,7 +32,10 @@ class VideoRender(object):
             return False
         # Append random to deconflict file-writes to shared media volume across several processes.
         filepath_prefix = os.environ["SHARED_MEDIA_VOLUME_PATH"] + str(random.randint(0, 9999))
-        successful_content_download = self.__download_all_content(mediaEvent.FinalRenderSequences, filepath_prefix)
+        # TODO: change flag when not running on potato internet
+        # https://trello.com/c/s7neUQPD
+        low_bandwidth = True
+        successful_content_download = self.__download_all_content(mediaEvent.FinalRenderSequences, filepath_prefix, low_bandwidth)
         
         if not successful_content_download:
             self.__cleanup_local_files(mediaEvent.FinalRenderSequences, filepath_prefix)
@@ -74,7 +77,24 @@ class VideoRender(object):
 
         
     
-    def __download_all_content(self, finalRenderSequences, filepath_prefix) -> bool:
+    def __download_all_content(self, finalRenderSequences, filepath_prefix, low_bandwidth = False) -> bool:
+        
+        if not low_bandwidth:
+            return self.__async_download_all(finalRenderSequences, filepath_prefix)
+
+        statuses = []
+        for s in finalRenderSequences:
+            self.__download_media(s.ContentLookupKey, statuses, filepath_prefix)
+        
+        for f in statuses:
+            if not f:
+                return False
+        
+        return True
+
+        
+    
+    def __async_download_all(self, finalRenderSequences, filepath_prefix) -> bool:
         jobs = []
         process_timeout_sec = 600
         with multiprocessing.Manager() as manager:

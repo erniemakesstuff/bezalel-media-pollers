@@ -60,9 +60,13 @@ class TextCallbackHandler(object):
     def minify_blog_text(self, payload) -> str:
         script = json.loads(payload)
         blogText = script['blogText']
-        if len(blogText) > 280:
-            logger.info("blog text too large, attempting to minify")
-            resultPayload = self.geminiInst.call_model_json_out("Re-write the json:blogText contents to be less than 280 characters long.",
+        max_twitter_post_length = 280
+        if len(blogText) > max_twitter_post_length:
+            logger.info("blog text too large, attempting to minify" )
+            resultPayload = self.geminiInst.call_model_json_out("""Re-write the json:blogText contents to be less than 280 characters long.
+                                                                All other fields should be unchanged.
+                                                                Return valid json output.
+                                                                """,
                                                              prompt_text=payload)
             return resultPayload
         

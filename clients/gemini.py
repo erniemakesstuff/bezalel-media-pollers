@@ -53,8 +53,10 @@ class GeminiClient(object):
         return response.text
     
     def call_model_json_out(self, system_instruction, prompt_text) -> str:
-        return self.sanitize_json(respText=self.call_model(system_instruction=system_instruction,
-                                                            prompt_text=prompt_text), retryCount=0)
+        responseText = self.call_model(system_instruction=system_instruction,
+                                                            prompt_text=prompt_text)
+        responseText = responseText.replace('```json', '').replace('```', '')
+        return self.sanitize_json(respText=responseText, retryCount=0)
     
     def sanitize_json(self, respText, retryCount) ->str:
         maxRetries = 3
@@ -77,16 +79,16 @@ class GeminiClient(object):
         response = self.model.generate_content(
             respText
             )
-        isValidJson = self.parse(response.text)
+        respText = response.text.replace('```json', '').replace('```', '')
+        isValidJson = self.parse(respText)
         if isValidJson:
-            return response.text
+            return respText
         time.sleep(15)
-        return self.sanitize_json(respText=response.text, retryCount=retryCount+1)
+        return self.sanitize_json(respText=respText, retryCount=retryCount+1)
     
     def parse(self, text) -> bool:
         try:
-            contents = text.replace('```json', '').replace('```', '')
-            json.loads(contents)
+            json.loads(text)
             return True
         except ValueError as e:
             return False
