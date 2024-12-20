@@ -8,7 +8,6 @@ from callbacks.common_callback import create_render
 logger = logging.getLogger(__name__)
 # Used for initial scripting.
 class ImageCallbackHandler(object):
-    geminiInst = None
     targetGenerator = None
     def __new__(cls, targetGenerator):
         if not hasattr(cls, 'instance'):
@@ -28,7 +27,8 @@ class ImageCallbackHandler(object):
         request_obj = {
             "promptInstruction": mediaEvent.PromptInstruction,
             "contentLookupKey": mediaEvent.ContentLookupKey,
-            "filepathPrefix": filepath_prefix
+            "filepathPrefix": filepath_prefix,
+            "watermarkText": mediaEvent.WatermarkText
         }
         if not RateLimiter().is_allowed("lexica", 1):
             logger.info("WARN rate limit breached for lexica")
