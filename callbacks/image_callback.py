@@ -8,11 +8,9 @@ from callbacks.common_callback import create_render
 logger = logging.getLogger(__name__)
 # Used for initial scripting.
 class ImageCallbackHandler(object):
-    targetGenerator = None
-    def __new__(cls, targetGenerator):
+    def __new__(cls):
         if not hasattr(cls, 'instance'):
              cls.instance = super(ImageCallbackHandler, cls).__new__(cls)
-        cls.targetGenerator = targetGenerator
         return cls.instance
     # Common interface.
     def handle_message(self, mediaEvent) -> bool:

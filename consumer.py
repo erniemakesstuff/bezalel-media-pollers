@@ -16,6 +16,7 @@ from callbacks.text_callback import TextCallbackHandler
 from callbacks.render_callback import RenderCallbackHandler
 from callbacks.image_callback import ImageCallbackHandler
 from callbacks.vocal_callback import VocalCallbackHandler
+from callbacks.context_callback import ContextCallbackHandler
 import clients.gemini as gemini
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,7 @@ media_text_queue = "https://sqs.us-west-2.amazonaws.com/971422718801/media-text-
 media_render_queue = "https://sqs.us-west-2.amazonaws.com/971422718801/media-render-queue"
 media_image_queue = "https://sqs.us-west-2.amazonaws.com/971422718801/media-image-queue"
 media_vocal_queue = "https://sqs.us-west-2.amazonaws.com/971422718801/media-vocal-queue"
+media_context_queue = "https://sqs.us-west-2.amazonaws.com/971422718801/media-context-queue"
 
 class Consumer:
     def __new__(cls):
@@ -62,25 +64,31 @@ class Consumer:
         if targetGenerator == 'local':
             while True:
                 try:
-                    queue_wrapper.poll(media_text_queue, TextCallbackHandler(targetGenerator=targetGenerator).handle_message,
+                    queue_wrapper.poll(media_text_queue, TextCallbackHandler().handle_message,
                                     visibility_timeout_seconds,
                                     poll_delay_seconds)
                 except Exception:
                     logger.info("exception in poller: " + traceback.format_exc())
                 try:
-                    queue_wrapper.poll(media_render_queue, RenderCallbackHandler(targetGenerator=targetGenerator).handle_message,
+                    queue_wrapper.poll(media_render_queue, RenderCallbackHandler().handle_message,
                                     visibility_timeout_seconds,
                                     poll_delay_seconds)
                 except Exception:
                     logger.info("exception in poller: " + traceback.format_exc())
                 try:
-                    queue_wrapper.poll(media_image_queue, ImageCallbackHandler(targetGenerator=targetGenerator).handle_message,
+                    queue_wrapper.poll(media_image_queue, ImageCallbackHandler().handle_message,
                                     visibility_timeout_seconds,
                                     poll_delay_seconds)
                 except Exception:
                     logger.info("exception in poller: " + traceback.format_exc())
                 try:
-                    queue_wrapper.poll(media_vocal_queue, VocalCallbackHandler(targetGenerator=targetGenerator).handle_message,
+                    queue_wrapper.poll(media_vocal_queue, VocalCallbackHandler().handle_message,
+                                    visibility_timeout_seconds,
+                                    poll_delay_seconds)
+                except Exception:
+                    logger.info("exception in poller: " + traceback.format_exc())
+                try:
+                    queue_wrapper.poll(media_context_queue, ContextCallbackHandler().handle_message,
                                     visibility_timeout_seconds,
                                     poll_delay_seconds)
                 except Exception:
@@ -97,6 +105,8 @@ class Consumer:
             work_queue = media_image_queue
         elif targetGenerator == 'Vocal':
             work_queue = media_vocal_queue
+        elif targetGenerator == 'Context':
+            work_queue = media_context_queue
         else:
             raise Exception("invalid targetGenerator: " + targetGenerator)
         logger.info("Starting polling...")

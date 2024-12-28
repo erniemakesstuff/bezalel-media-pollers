@@ -11,7 +11,7 @@ class RenderCallbackHandler(object):
     videoDistributionFormats = [
         "shortvideo"
     ]
-    def __new__(cls, targetGenerator):
+    def __new__(cls):
         if not hasattr(cls, 'instance'):
              cls.instance = super(RenderCallbackHandler, cls).__new__(cls)
              cls.geminiInst = gemini.GeminiClient()

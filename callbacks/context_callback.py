@@ -12,11 +12,10 @@ import clients.gemini as gemini
 import clients.polly as polly
 import s3_wrapper
 logger = logging.getLogger(__name__)
-# Final publish blogs, or videos.
-class VocalCallbackHandler(object):
+class ContextCallbackHandler(object):
     def __new__(cls):
         if not hasattr(cls, 'instance'):
-             cls.instance = super(VocalCallbackHandler, cls).__new__(cls)
+             cls.instance = super(ContextCallbackHandler, cls).__new__(cls)
         return cls.instance
     # Common interface.
     def handle_message(self, mediaEvent) -> bool:

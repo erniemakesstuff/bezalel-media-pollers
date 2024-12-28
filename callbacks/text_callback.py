@@ -12,13 +12,11 @@ max_gemini_requests = 980
 # Used for initial scripting.
 class TextCallbackHandler(object):
     geminiInst = None
-    targetGenerator = None
     editor_forbidden = "EDITOR_FORBIDDEN"
     editor_allows = "EDITOR_ALLOWS"
-    def __new__(cls, targetGenerator):
+    def __new__(cls):
         if not hasattr(cls, 'instance'):
              cls.instance = super(TextCallbackHandler, cls).__new__(cls)
-        cls.targetGenerator = targetGenerator
         cls.geminiInst = gemini.GeminiClient()
         return cls.instance
     # Common interface.

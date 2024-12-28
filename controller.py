@@ -78,6 +78,6 @@ def testImage():
     }
     mediaEvent = queue_wrapper.to_media_event(json.dumps(finalRenderEvent))
 
-    renderer = image_callback.ImageCallbackHandler(targetGenerator="Image")
+    renderer = image_callback.ImageCallbackHandler()
     logger.info("calling get image")
     return str(renderer.handle_image_generation(mediaEvent=mediaEvent))
