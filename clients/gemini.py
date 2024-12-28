@@ -92,3 +92,9 @@ class GeminiClient(object):
             return True
         except ValueError as e:
             return False
+        
+    def analyze_media(self) -> str:
+        """
+        https://cloud.google.com/vertex-ai/generative-ai/docs/samples/generativeaionvertexai-gemini-pro-example#generativeaionvertexai_gemini_pro_example-python
+        """
+        pass

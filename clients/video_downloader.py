@@ -25,8 +25,8 @@ class VideoDownloader:
         elif d['status'] == 'finished':
             print("\nDownload completed, finalizing...")
     
-    def download_video(self, video_url: str, custom_name: str) -> Optional[str]:
-        filename = custom_name
+    def download_video(self, video_url: str, save_as: str) -> Optional[str]:
+        filename = save_as
         output_path = filename
         # TODO: Auth options: https://github.com/yt-dlp/yt-dlp?tab=readme-ov-file#authentication-options
         ydl_opts = {
@@ -36,6 +36,7 @@ class VideoDownloader:
             'quiet': False,
             'progress_hooks': [self.progress_hook],
             # TODO: support cookies https://trello.com/c/pkVYTxns
+            # TODO: Infer cookie from path url
             #'cookiesfrombrowser': ('chrome',),  # Use Chrome cookies for authentication
             #'extractor_args': {'tiktok': {'webpage_download': True}},
             'http_headers': {
