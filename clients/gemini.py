@@ -58,7 +58,7 @@ class GeminiClient(object):
         responseText = responseText.replace('```json', '').replace('```', '')
         return self.sanitize_json(respText=responseText, retryCount=0)
     
-    def sanitize_json(self, respText, retryCount) ->str:
+    def sanitize_json(self, respText, retryCount) -> str:
         maxRetries = 3
         if retryCount > maxRetries:
             logger.error("failed to sanitize json text")

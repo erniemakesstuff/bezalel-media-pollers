@@ -6,6 +6,7 @@ from clients.rate_limiter import RateLimiter
 import queue_wrapper
 from callbacks.renderers import video_render
 from callbacks import image_callback
+from clients.tiktok_downloader import VideoDownloader
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
 @app.route("/health")
@@ -81,3 +82,10 @@ def testImage():
     renderer = image_callback.ImageCallbackHandler()
     logger.info("calling get image")
     return str(renderer.handle_image_generation(mediaEvent=mediaEvent))
+
+@app.route("/test-download")
+def testDownload():
+    logger.info("calling download source")
+    downloader = VideoDownloader()
+    downloadResult = downloader.download_video('https://imgur.com/gallery/yummy-4paOhMd', os.environ["SHARED_MEDIA_VOLUME_PATH"]+ "test_imgur_download.mp4")
+    return str(downloadResult)

@@ -9,6 +9,9 @@ google-cloud-aiplatform = "*"
 flask = "*"
 ez-setup = "*"
 imageio = "*"
+yt-dlp = "*"
+typing = "*"
+gallery-dl = "*"
 
 [dev-packages]
 
