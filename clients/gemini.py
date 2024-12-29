@@ -97,4 +97,5 @@ class GeminiClient(object):
         """
         https://cloud.google.com/vertex-ai/generative-ai/docs/samples/generativeaionvertexai-gemini-pro-example#generativeaionvertexai_gemini_pro_example-python
         """
+        # TODO: Implement https://trello.com/c/aADouL3V
         pass

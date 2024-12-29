@@ -36,14 +36,14 @@ class ContextCallbackHandler(object):
     
     def handle_context_generation(self, mediaEvent) -> bool:
         fileName = os.environ["SHARED_MEDIA_VOLUME_PATH"] + mediaEvent.ContentLookupKey
-        # TODO
+        # TODO https://trello.com/c/aADouL3V
         # ...
         downloaded_remote_file = self.download_source_content(mediaEvent)
         if not downloaded_remote_file:
             logger.error("failed to download remote files from context handler")
             return False
         
-        
+
         success = s3_wrapper.upload_file(fileName, mediaEvent.ContentLookupKey)
         os.remove(fileName)
         return success
@@ -90,6 +90,7 @@ class ContextCallbackHandler(object):
         )
     
     def analyze_source_content(self, mediaEvent):
+        self.geminiInst.call_model_json_out
         pass
 
     def extract_base_url(self, url):
