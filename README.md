@@ -50,3 +50,9 @@ Setting service account keys: https://cloud.google.com/docs/authentication/provi
 
 If you see two duplicate log entires when running locally, it's because there are two file handlers being used for output.
 
+
+
+# Ollama Local
+http://localhost:11434
+https://github.com/ollama/ollama/blob/main/docs/api.md
+
