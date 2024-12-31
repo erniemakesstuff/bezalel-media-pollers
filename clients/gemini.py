@@ -46,8 +46,9 @@ class GeminiClient(object):
         response = self.model.generate_content(
             prompt_text
             )
+        safety = "3"
         for c in response.candidates:
-            if c.finish_reason == "SAFETY":
+            if str(c.finish_reason) == safety:
                 logger.info("Gemini responded with safety flag.")
                 return "[EDITOR_FORBIDDEN] LLM safety flagged content."
         return response.text

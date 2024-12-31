@@ -8,7 +8,7 @@ import clients.gemini as gemini
 from clients.rate_limiter import RateLimiter
 import s3_wrapper
 logger = logging.getLogger(__name__)
-max_gemini_requests = 980
+max_gemini_requests_minute = 12 # TODO: Move this to env config
 # Used for initial scripting.
 class TextCallbackHandler(object):
     geminiInst = None
@@ -43,7 +43,7 @@ class TextCallbackHandler(object):
         if self.editor_forbidden in promptText:
             logger.info("Content forbidden by editor: " + mediaEvent.ContentLookupKey + " decision: " + promptText)
             return True # Noop
-        if not RateLimiter().is_allowed("gemini", max_gemini_requests):
+        if not RateLimiter().is_allowed("gemini", max_gemini_requests_minute):
             logger.info("WARN rate limit breached for gemini")
             return False
         resultScript = self.geminiInst.call_model_json_out(mediaEvent.SystemPromptInstruction, prompt_text=promptText)
@@ -168,25 +168,25 @@ class TextCallbackHandler(object):
             Do not reformat the text. Only perform word and phrase replacement.
             ###
         """
-        if not RateLimiter().is_allowed("gemini", max_gemini_requests):
+        if not RateLimiter().is_allowed("gemini", max_gemini_requests_minute):
             logger.info("WARN rate limit breached for gemini")
             return ""
         evalText = self.geminiInst.call_model(evalJailbreak, mediaEvent.PromptInstruction)
         if self.editor_forbidden in evalText:
             self.send_to_s3(contentLookupKey=mediaEvent.ContentLookupKey, text=evalText)
             return evalText
-        if not RateLimiter().is_allowed("gemini", max_gemini_requests):
+        if not RateLimiter().is_allowed("gemini", max_gemini_requests_minute):
             logger.info("WARN rate limit breached for gemini")
             return ""
         evalText = self.geminiInst.call_model(evalInstruction, mediaEvent.PromptInstruction)
         if self.editor_forbidden in evalText:
             self.send_to_s3(contentLookupKey=mediaEvent.ContentLookupKey, text=evalText)
             return evalText
-        if not RateLimiter().is_allowed("gemini", max_gemini_requests):
+        if not RateLimiter().is_allowed("gemini", max_gemini_requests_minute):
             logger.info("WARN rate limit breached for gemini")
             return ""
         sanitizedTextAcronyms = self.geminiInst.call_model(sanitizeInstructionAcronyms, mediaEvent.PromptInstruction)
-        if not RateLimiter().is_allowed("gemini", max_gemini_requests):
+        if not RateLimiter().is_allowed("gemini", max_gemini_requests_minute):
             logger.info("WARN rate limit breached for gemini")
             return ""
         sanitizedPhrases =  self.geminiInst.call_model(sanitizeInstructionPhrases, sanitizedTextAcronyms)
