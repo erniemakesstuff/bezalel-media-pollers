@@ -56,6 +56,9 @@ class GeminiClient(object):
     def call_model_json_out(self, system_instruction, prompt_text) -> str:
         responseText = self.call_model(system_instruction=system_instruction,
                                                             prompt_text=prompt_text)
+        if "EDITOR_FORBIDDEN" in responseText:
+            return responseText
+        
         responseText = responseText.replace('```json', '').replace('```', '')
         return self.sanitize_json(respText=responseText, retryCount=0)
     

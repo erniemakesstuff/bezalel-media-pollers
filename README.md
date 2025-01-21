@@ -13,7 +13,7 @@ be added here. SimpleImageGenerator will host a dedicated stable diffusion model
 # Usage
 Start shell environment
 `pipenv shell`
-Run from pipenv: `pipenv run python.main.py` 
+Run from pipenv: `pipenv run python main.py` 
 Run without pipenv: `python main.py`
 
 ## venvs
